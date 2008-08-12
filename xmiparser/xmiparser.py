@@ -14,19 +14,15 @@ import string
 import os.path
 import logging
 from zipfile import ZipFile
-
 from sets import Set
 from odict import odict
-
+from xml.dom import minidom
+from zope.interface import implements
 from utils import mapName
 from utils import toBoolean
 from utils import normalize
 from utils import wrap as doWrap
-
-from xml.dom import minidom
-#from archgenxml.TaggedValueSupport import tgvRegistry
-from zope import interface
-from interfaces import *
+from interfaces import IPackage
 
 log = logging.getLogger('XMIparser')
 
@@ -1250,7 +1246,7 @@ class StateMachineContainer(object):
 
 
 class XMIPackage(XMIElement, StateMachineContainer):
-    interface.implements(IPackage)
+    implements(IPackage)
     project = None
     isroot = 0
 
@@ -1482,7 +1478,7 @@ class XMIPackage(XMIElement, StateMachineContainer):
 
 
 class XMIModel(XMIPackage):
-    interface.implements(IPackage)
+    implements(IPackage)
     isroot = 1
     parent = None
     diagrams = {}

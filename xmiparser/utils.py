@@ -2,20 +2,13 @@ import logging
 import os.path
 import sys
 import types
-
-
-
 import logging
 log = logging.getLogger('utils')
 
 
 def mapName(oldName):
     #global NameTable
-    newName = oldName
-    if NameTable:
-        if oldName in NameTable.keys():
-            newName = NameTable[oldName]
-    return newName.replace('-', '_')
+    return oldName.replace('-', '_')
 
 def toBoolean(v):
     if isinstance(v, (str, unicode)):
