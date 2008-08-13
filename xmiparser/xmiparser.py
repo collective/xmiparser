@@ -2757,10 +2757,11 @@ def parse(xschemaFileName=None, xschema=None, packages=[], generator=None,**kw):
         suff = os.path.splitext(xschemaFileName)[1].lower()
         if suff.lower() in ('.zargo','.zuml','.zip'):
             log.debug("Opening %s ..." % suff.lower())
-            zf=ZipFile(xschemaFileName)
-            xmis=[n for n in zf.namelist() if os.path.splitext(n)[1].lower()in ['.xmi','.xml']]
+            zf = ZipFile(xschemaFileName)
+            xmis = [n for n in zf.namelist() \
+                    if os.path.splitext(n)[1].lower() in ['.xmi','.xml']]
             assert(len(xmis)==1)
-            buf=zf.read(xmis[0])
+            buf = zf.read(xmis[0])
             doc = minidom.parseString(buf)
         else:
             doc = minidom.parse(xschemaFileName)
