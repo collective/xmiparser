@@ -1287,8 +1287,8 @@ class XMIPackage(XMIElement, StateMachineContainer):
     def getAssociations(self, recursive=0):
         classes = self.getClassesAndInterfaces(recursive=recursive)
         res = Set()
-        for c in classes:
-            res.union_update(c.getFromAssociations())
+        for cl in classes:
+            res.union_update(cl.getFromAssociations())
         return res
 
     def addClass(self, cl):
@@ -1300,12 +1300,11 @@ class XMIPackage(XMIElement, StateMachineContainer):
         cl.package = self
 
     def getInterfaces(self, recursive=0):
-        res = [c for c in self.classes]
         res = self.interfaces
         if recursive:
             res = list(res)
             for p in self.getPackages():
-                res.extend(p.getClasses(recursive=1))
+                res.extend(p.getInterfaces(recursive=1))
         return res
 
     def getClassesAndInterfaces(self, recursive=0):
