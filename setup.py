@@ -12,11 +12,11 @@ setup(name='xmiparser',
       description=shortdesc,
       long_description=longdesc,
       classifiers=[
-            'Framework :: Python',
+            'Programming Language :: Python',
             'License :: OSI Approved :: GNU General Public License (GPL)',
             'Operating System :: OS Independent',
             'Programming Language :: Python',
-      ], # Get strings from http://www.python.org/pypi?%3Aaction=list_classifiers
+      ], # Get strings from http://pypi.python.org/pypi?%3Aaction=list_classifiers
       keywords='',
       author='Philipp Auersperg, Jens Klein',
       author_email='dev@bluedynamics.com',
