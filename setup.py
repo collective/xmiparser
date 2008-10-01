@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 import sys, os
 
 version = '1.0'
-shortdesc = "XMI Parser (API for the UML XML format)"
+shortdesc = "XMI Parser (API for the UML XML representation specified by OMG)"
 import pdb; pdb.set_trace
 longdesc = open(os.path.join(os.path.dirname(__file__), 'README.txt')).read()
 packages=find_packages(exclude=['ez_setup',])
