@@ -2754,8 +2754,8 @@ def parse(xschemaFileName=None, xschema=None, packages=[], generator=None,**kw):
 
     if xschemaFileName:
         suff = os.path.splitext(xschemaFileName)[1].lower()
-        if suff.lower() in ('.zargo','.zuml','.zip'):
-            log.debug("Opening %s ..." % suff.lower())
+        if suff in ('.zargo','.zuml','.zip'):
+            log.debug("Opening %s ..." % suff)
             zf = ZipFile(xschemaFileName)
             xmis = [n for n in zf.namelist() \
                     if os.path.splitext(n)[1].lower() in ['.xmi','.xml']]
@@ -2772,13 +2772,13 @@ def parse(xschemaFileName=None, xschema=None, packages=[], generator=None,**kw):
         xmiver = str(xmi.getAttribute('xmi.version'))
         log.debug("XMI version: %s", xmiver)
         if xmiver >= "1.2":
-            log.debug("Using xmi 1.2+ parser.")
+            log.debug("Using xmi 1.2 parser.")
             XMI = XMI1_2(**kw)
         elif xmiver >= "1.1":
-            log.debug("Using xmi 1.1+ parser.")
+            log.debug("Using xmi 1.1 parser.")
             XMI = XMI1_1(**kw)
         else:
-            log.debug("Using xmi 1.1+ parser.")
+            log.debug("Using xmi 1.0 parser.")
             XMI = XMI1_0(**kw)
     except:
         log.debug("No version info found, taking XMI1_0.")
