@@ -1,13 +1,21 @@
+# -*- coding: utf-8 -*-
 import logging
-import os.path
-import sys
 import types
 import logging
 log = logging.getLogger('utils')
 
+specialrpl = {
+    u'ö': u'oe',
+    u'ü': u'ue',
+    u'ä': u'ae',
+    u'Ö': u'Oe',
+    u'Ü': u'Ue',
+    u'Ä': u'Ae',
+    u'ß': u'ss',
+    # add more for other language here
+}
 
 def mapName(oldName):
-    #global NameTable
     return oldName.replace('-', '_')
 
 def toBoolean(v):
@@ -55,6 +63,7 @@ def normalize(data, doReplace=False):
     else:
         return None
 
+# http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/148061
 def wrap(text, width):
     """
     A word-wrap function that preserves existing line breaks
