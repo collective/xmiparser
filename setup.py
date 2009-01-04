@@ -15,7 +15,6 @@ setup(name='xmiparser',
             'Programming Language :: Python',
             'License :: OSI Approved :: GNU General Public License (GPL)',
             'Operating System :: OS Independent',
-            'Programming Language :: Python',
       ], # Get strings from http://pypi.python.org/pypi?%3Aaction=list_classifiers
       keywords='',
       author='Philipp Auersperg, Jens Klein',
@@ -27,8 +26,8 @@ setup(name='xmiparser',
       include_package_data=True,
       zip_safe=False,
       install_requires=[
-          'setuptools',       
-          'zope.interface',                 
+          'setuptools',
+          'zope.interface',
       ],
       entry_points="""
       # -*- Entry points: -*-
