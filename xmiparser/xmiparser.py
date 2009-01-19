@@ -2085,28 +2085,27 @@ class XMIAssociation (XMIElement):
         name = str(self.name)
         if self.name:
             log.debug("self.name is set to '%s', returning it.", name)
-            res = name
+            return name
+        log.info("self.name isn't set.")
+        if self.fromEnd:
+            fromname = self.fromEnd.getName(ignore_cardinality=1)
+            log.debug("Getting fromname from the startpoint: '%s'.",
+                      fromname)
         else:
-            log.debug("self.name isn't set.")
-            if self.fromEnd:
-                fromname = self.fromEnd.getName(ignore_cardinality=1)
-                log.debug("Getting fromname from the startpoint: '%s'.",
-                          fromname)
-            else:
-                fromname = self.getId()
-                log.debug("Getting fromname from our id: '%s'.", fromname)
-            if self.toEnd:
-                toname = self.toEnd.getName(ignore_cardinality=1)
-                log.debug("Getting toname from the endpoint: '%s'.", toname)
-            else:
-                toname = self.getId()
-                log.debug("Getting toname from our id: '%s'.", toname)
-            res = '%s_%s' % (fromname, toname)
-            log.debug("Combining that fromname and toname to form our "
-                      "relation name: '%s'.", res)
-            if isinstance(res, basestring):
-                res = res.strip().lower()
-                log.debug("Making it lowercase for good measure: '%s'.", res)
+            fromname = self.getId()
+            log.debug("Getting fromname from our id: '%s'.", fromname)
+        if self.toEnd:
+            toname = self.toEnd.getName(ignore_cardinality=1)
+            log.debug("Getting toname from the endpoint: '%s'.", toname)
+        else:
+            toname = self.getId()
+            log.debug("Getting toname from our id: '%s'.", toname)
+        res = '%s_%s' % (fromname, toname)
+        log.debug("Combining that fromname and toname to form our "
+                  "relation name: '%s'.", res)
+        if isinstance(res, basestring):
+            res = res.strip().lower()
+            log.debug("Making it lowercase for good measure: '%s'.", res)
         return res
 
     def getInverseName(self):
