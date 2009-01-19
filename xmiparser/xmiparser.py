@@ -2086,7 +2086,7 @@ class XMIAssociation (XMIElement):
         if self.name:
             log.debug("self.name is set to '%s', returning it.", name)
             return name
-        log.info("self.name isn't set.")
+        log.debug("self.name isn't set.")
         if self.fromEnd:
             fromname = self.fromEnd.getName(ignore_cardinality=1)
             log.debug("Getting fromname from the startpoint: '%s'.",
