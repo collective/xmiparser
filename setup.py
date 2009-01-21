@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 import sys, os
 
-version = '1.1'
+version = '1.2'
 shortdesc = "XMI Parser (API for the UML XML representation specified by OMG)"
 import pdb; pdb.set_trace
 longdesc = open(os.path.join(os.path.dirname(__file__), 'README.txt')).read()
