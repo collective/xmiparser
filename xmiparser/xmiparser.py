@@ -2022,7 +2022,7 @@ class XMIAttribute (XMIElement):
         except:
             log.debug("Ouch, self.mult hasn't been set for '%s' (%s).",
                       self.name, self)
-            return 1
+            return (1, 1) # not sure if its good to have default here (jensens)
 
     def getLowerBound(self):
         return self.getMultiplicity()[0]
