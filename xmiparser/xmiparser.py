@@ -23,6 +23,7 @@ from utils import toBoolean
 from utils import normalize
 from utils import wrap as doWrap
 from interfaces import IPackage
+import zargoparser
 
 log = logging.getLogger('XMIparser')
 
@@ -160,6 +161,16 @@ class XMI1_0(object):
 
     def getIdRef(self, domElement):
         return domElement.getAttribute('xmi.idref').strip()
+
+    def getHrefId(self, domElement):
+        href = domElement.getAttribute('href').strip()
+        splitted = href.rsplit('/', 1)
+        if not len(splitted) == 2:
+            return ''
+        return splitted[1]
+    
+    def getIdRefOrHrefId(self, domElement):
+        return self.getIdRef(domElement) or self.getHrefId(domElement)
 
     def getAssocEndParticipantId(self, el):
         assocend = getElementByTagName(el, self.ASSOCEND_PARTICIPANT, None)
@@ -432,7 +443,7 @@ class XMI1_0(object):
         if len(typeinfos):
             classifiers = typeinfos[0].getElementsByTagName(XMI.CLASSIFIER)
             if len(classifiers):
-                typeid = str(classifiers[0].getAttribute('xmi.idref'))
+                typeid = str(self.getIdRefOrHrefId(classifiers[0]))
                 typeElement = datatypes[typeid]
                 att.type = XMI.getName(typeElement)
                 # Collects all datatype names (to prevent pure datatype
@@ -626,19 +637,19 @@ class XMI1_2 (XMI1_1):
             # Fix for http://plone.org/products/archgenxml/issues/62
             return None, None 
         # Fetch the name from the global tagDefinitions (weird)
-        idref = tdef.getAttribute('xmi.idref')
-        tagname = normalize(self.tagDefinitions[idref].getAttribute('name'))
+        id = self.getIdRefOrHrefId(tdef)
+        tagname = normalize(self.tagDefinitions[id].getAttribute('name'))
         tagvalue = normalize(getAttributeValue(el, self.TAGGED_VALUE_VALUE,
                                                default=None))
         return tagname, tagvalue
 
-    def collectTagDefinitions(self, el):
+    def collectTagDefinitions(self, el, prefix=''):
         tagdefs = el.getElementsByTagName(self.TAG_DEFINITION)
         if self.tagDefinitions is None:
             self.tagDefinitions = {}
         for t in tagdefs:
             if t.hasAttribute('name'):
-                self.tagDefinitions[t.getAttribute('xmi.id')] = t
+                self.tagDefinitions[prefix + t.getAttribute('xmi.id')] = t
 
     def calculateStereoType(self, o):
         # In xmi its weird, because all objects to which a stereotype
@@ -649,7 +660,7 @@ class XMI1_2 (XMI1_1):
         for st in sts:
             strefs = getSubElements(st)
             for stref in strefs:
-                id = stref.getAttribute('xmi.idref').strip()
+                id = self.getIdRefOrHrefId(stref)
                 if id:
                     st = stereotypes[id]
                     o.addStereoType(self.getName(st).strip())
@@ -679,7 +690,7 @@ class XMI1_2 (XMI1_1):
             classifiers = [cn for cn in typeinfos[0].childNodes
                            if cn.nodeType == cn.ELEMENT_NODE]
             if len(classifiers):
-                typeid = str(classifiers[0].getAttribute('xmi.idref'))
+                typeid = self.getIdRefOrHrefId(classifiers[0])
                 try:
                     typeElement = datatypes[typeid]
                 except KeyError:
@@ -2664,42 +2675,55 @@ class XMIDiagram(XMIElement):
 
 #----------------------------------------------------------
 
-def buildDataTypes(doc):
+def buildDataTypes(doc, profile=''):
     global datatypes
+    if profile:
+        log.debug("DataType profile: %s", profile)
+        getId = lambda e: profile + "#" + str(e.getAttribute('xmi.id'))
+    else:
+        getId = lambda e: str(e.getAttribute('xmi.id'))
 
     dts = doc.getElementsByTagName(XMI.DATATYPE)
 
     for dt in dts:
-        datatypes[str(dt.getAttribute('xmi.id'))] = dt
+        datatypes[getId(dt)] = dt
 
     classes = [c for c in doc.getElementsByTagName(XMI.CLASS)]
 
     for dt in classes:
-        datatypes[str(dt.getAttribute('xmi.id'))] = dt
+        datatypes[getId(dt)] = dt
 
     interfaces = [c for c in doc.getElementsByTagName(XMI.INTERFACE)]
 
     for dt in interfaces:
-        datatypes[str(dt.getAttribute('xmi.id'))] = dt
+        datatypes[getId(dt)] = dt
 
     interfaces = [c for c in doc.getElementsByTagName(XMI.ACTOR)]
 
     for dt in interfaces:
-        datatypes[str(dt.getAttribute('xmi.id'))] = dt
+        datatypes[getId(dt)] = dt
 
-    XMI.collectTagDefinitions(doc)
+    prefix = profile and profile + "#" or ''
+    XMI.collectTagDefinitions(doc, prefix=prefix)
 
-def buildStereoTypes(doc):
+def buildStereoTypes(doc, profile=''):
     global stereotypes
+    if profile:
+        log.debug("Stereotype profile: %s", profile)
+        getId = lambda e: profile + "#" + str(e.getAttribute('xmi.id'))
+    else:
+        getId = lambda e: str(e.getAttribute('xmi.id'))
+    
     sts = doc.getElementsByTagName(XMI.STEREOTYPE)
 
     for st in sts:
         id = st.getAttribute('xmi.id')
-        if not id:continue
-        stereotypes[str(id)] = st
+        if not id:
+            continue
+        stereotypes[getId(st)] = st
         #print 'stereotype:', id, XMI.getName(st)
 
-def buildHierarchy(doc, packagenames):
+def buildHierarchy(doc, packagenames, profile_docs=None):
     """Builds Hierarchy out of the doc."""
     global datatypes
     global stereotypes
@@ -2709,6 +2733,11 @@ def buildHierarchy(doc, packagenames):
     datatypes = {}
     stereotypes = {}
     datatypenames = ['int', 'void', 'string']
+
+    if profile_docs:
+        for profile_key, profile_doc in profile_docs.items():
+            buildDataTypes(profile_doc, profile=profile_key)
+            buildStereoTypes(profile_doc, profile=profile_key)
 
     buildDataTypes(doc)
     buildStereoTypes(doc)
@@ -2747,22 +2776,46 @@ def buildHierarchy(doc, packagenames):
 
     return res
 
-def parse(xschemaFileName=None, xschema=None, packages=[], generator=None,**kw):
+def parse(xschemaFileName=None, xschema=None, packages=[], generator=None, profile_dir=None, **kw):
     """ """
     global XMI
 
+    if profile_dir:
+        log.info("Directory to search for profiles: '%s'", profile_dir)
+    profile_docs = {}
+
+    log.info("Parsing...")
     if xschemaFileName:
         suff = os.path.splitext(xschemaFileName)[1].lower()
-        if suff in ('.zargo','.zuml','.zip'):
+        if suff in ('.zargo', '.zuml', '.zip'):
             log.debug("Opening %s ..." % suff)
             zf = ZipFile(xschemaFileName)
             xmis = [n for n in zf.namelist() \
-                    if os.path.splitext(n)[1].lower() in ['.xmi','.xml']]
+                    if os.path.splitext(n)[1].lower() in ('.xmi','.xml')]
             assert(len(xmis)==1)
+
+            # search for profiles includes in *.zargo zipfile
+            profile_files = {}
+            if profile_dir:
+                profiles = [n for n in zf.namelist() if os.path.splitext(n)[1].lower() in ('.profile',)]
+                if profiles:
+                    assert(len(profiles)==1)
+                    for fn in zargoparser.getProfileFilenames(zf.read(profiles[0])):
+                        profile_path = os.path.join(profile_dir, fn)
+                        if not os.path.exists(profile_path):
+                            raise IOError("Profile %s not found" % fn)
+                        profile_files[fn] = profile_path
+                    log.info("Profile files: '%s'" % str(profile_files))
+                    for f, content in profile_files.items():
+                        profile_docs[f] = minidom.parse(content)
+
             buf = zf.read(xmis[0])
             doc = minidom.parseString(buf)
-        else:
+        elif suff in ('.xmi', '.xml', '.uml'):
+            log.debug("Opening %s ..." % suff)
             doc = minidom.parse(xschemaFileName)
+        else:
+            raise TypeError('Input file not of the following types: .xmi, .xml, .uml, .zargo, .zuml, .zip')
     else:
         doc = minidom.parseString(xschema)
 
@@ -2784,7 +2837,8 @@ def parse(xschemaFileName=None, xschema=None, packages=[], generator=None,**kw):
 
     XMI.generator = generator
 
-    root = buildHierarchy(doc, packages)
+    root = buildHierarchy(doc, packages, profile_docs=profile_docs)
+    log.debug("Created a root XMI parser.")
 
     return root
 
