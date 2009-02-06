@@ -2779,10 +2779,12 @@ def buildHierarchy(doc, packagenames, profile_docs=None):
 def parse(xschemaFileName=None, xschema=None, packages=[], generator=None, profile_dir=None, **kw):
     """ """
     global XMI
-
+    profiles_directories = zargoparser.getProfilesDirectories()
     if profile_dir:
-        log.info("Directory to search for profiles: '%s'", profile_dir)
+        profiles_directories[0:0] = [profile_dir]
     profile_docs = {}
+    if profiles_directories:
+        log.info("Directories to search for profiles: %s", str(profiles_directories))
 
     log.info("Parsing...")
     if xschemaFileName:
@@ -2796,18 +2798,22 @@ def parse(xschemaFileName=None, xschema=None, packages=[], generator=None, profi
 
             # search for profiles includes in *.zargo zipfile
             profile_files = {}
-            if profile_dir:
-                profiles = [n for n in zf.namelist() if os.path.splitext(n)[1].lower() in ('.profile',)]
-                if profiles:
-                    assert(len(profiles)==1)
-                    for fn in zargoparser.getProfileFilenames(zf.read(profiles[0])):
-                        profile_path = os.path.join(profile_dir, fn)
-                        if not os.path.exists(profile_path):
-                            raise IOError("Profile %s not found" % fn)
-                        profile_files[fn] = profile_path
-                    log.info("Profile files: '%s'" % str(profile_files))
-                    for f, content in profile_files.items():
-                        profile_docs[f] = minidom.parse(content)
+            profiles = [n for n in zf.namelist() if os.path.splitext(n)[1].lower() in ('.profile',)]
+            if profiles:
+                assert(len(profiles)==1)
+                for fn in zargoparser.getProfileFilenames(zf.read(profiles[0])):
+                    found = False
+                    for profile_directory in profiles_directories:
+                        profile_path = os.path.join(profile_directory, fn)
+                        if os.path.exists(profile_path):
+                            profile_files[fn] = profile_path
+                            found = True
+                            break
+                    if not found:
+                        raise IOError("Profile %s not found" % fn)
+                log.info("Profile files: '%s'" % str(profile_files))
+                for f, content in profile_files.items():
+                    profile_docs[f] = minidom.parse(content)
 
             buf = zf.read(xmis[0])
             doc = minidom.parseString(buf)
