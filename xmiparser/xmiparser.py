@@ -1,14 +1,7 @@
 # -*- coding: utf-8 -*-
-#-----------------------------------------------------------------------------
-# Name:        XMIParser.py
-# Purpose:     Parse XMI (UML-model) and provide a logical model of it
 #
-# Author:      Philipp Auersperg
-#
-# Created:     2003/19/07
-# Copyright:   (c) 2003-2008 BlueDynamics
-# Licence:     GPL
-#-----------------------------------------------------------------------------
+# Copyright 2003-2009, Blue Dynamics Alliance - http://bluedynamics.com
+# GNU General Public Licence Version 2 or later
 
 import string
 import os.path
@@ -2767,15 +2760,20 @@ def buildHierarchy(doc, packagenames, profile_docs=None):
 
     return res
 
-def parse(xschemaFileName=None, xschema=None, packages=[], generator=None, profile_dir=None, **kw):
-    """ """
+def parse(xschemaFileName=None, xschema=None, packages=[],
+          generator=None, profile_dir=None, **kw):
+    """BBB: replaced by xmiparser.factory.ModelFactory.
+    
+    XXX: remove hopefully soon.
+    """
     global XMI
     profiles_directories = zargoparser.getProfilesDirectories()
     if profile_dir:
         profiles_directories[0:0] = [profile_dir]
     profile_docs = {}
     if profiles_directories:
-        log.info("Directories to search for profiles: %s", str(profiles_directories))
+        log.info("Directories to search for profiles: %s",
+                 str(profiles_directories))
 
     log.info("Parsing...")
     if xschemaFileName:
@@ -2789,7 +2787,8 @@ def parse(xschemaFileName=None, xschema=None, packages=[], generator=None, profi
 
             # search for profiles includes in *.zargo zipfile
             profile_files = {}
-            profiles = [n for n in zf.namelist() if os.path.splitext(n)[1].lower() in ('.profile',)]
+            profiles = [n for n in zf.namelist() \
+                            if os.path.splitext(n)[1].lower() in ('.profile',)]
             if profiles:
                 assert(len(profiles)==1)
                 for fn in zargoparser.getProfileFilenames(zf.read(profiles[0])):
@@ -2812,7 +2811,8 @@ def parse(xschemaFileName=None, xschema=None, packages=[], generator=None, profi
             log.debug("Opening %s ..." % suff)
             doc = minidom.parse(xschemaFileName)
         else:
-            raise TypeError('Input file not of the following types: .xmi, .xml, .uml, .zargo, .zuml, .zip')
+            raise TypeError("Input file not of the following types: "
+                            ".xmi, .xml, .uml, .zargo, .zuml, .zip")
     else:
         doc = minidom.parseString(xschema)
 
@@ -2832,14 +2832,10 @@ def parse(xschemaFileName=None, xschema=None, packages=[], generator=None, profi
     except:
         log.debug("No version info found, taking XMI1_0.")
 
+    # XXX: get rid of this
     XMI.generator = generator
 
     root = buildHierarchy(doc, packages, profile_docs=profile_docs)
     log.debug("Created a root XMI parser.")
 
     return root
-
-
-if __name__ == '__main__':
-    import doctest
-    doctest.testfile('xmiparser.txt')

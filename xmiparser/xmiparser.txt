@@ -1,4 +1,4 @@
-lets import the parser
+Lets import the parser.
 
     >>> import xmiparser
 

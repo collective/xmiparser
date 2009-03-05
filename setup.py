@@ -14,12 +14,12 @@ setup(name='xmiparser',
             'Programming Language :: Python',
             'License :: OSI Approved :: GNU General Public License (GPL)',
             'Operating System :: OS Independent',
-      ], # Get strings from http://pypi.python.org/pypi?%3Aaction=list_classifiers
-      keywords='',
-      author='Philipp Auersperg, Jens Klein',
+      ],
+      keywords='uml, xmi, parser',
+      author='Philipp Auersperg, Jens Klein, Robert Niederreiter',
       author_email='dev@bluedynamics.com',
-      url='http://pypi.python.org/pypi/xmiparser',
-      license='General Public Licence',
+      url='https://svn.plone.org/svn/collective/xmiparser',
+      license='GNU General Public Licence',
       packages=packages,
       namespace_packages=[],
       include_package_data=True,
@@ -29,6 +29,15 @@ setup(name='xmiparser',
           'zope.interface',
           'stripogram'
       ],
+      extras_require = dict(
+          test=[
+            'interlude',
+            'zope.component',
+            'zope.configuration',
+            'zope.security',
+            'zope.testing',
+          ]
+      ),
       entry_points="""
       # -*- Entry points: -*-
       """,

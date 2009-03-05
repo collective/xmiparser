@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+#
+# Copyright 2003-2009, Blue Dynamics Alliance - http://bluedynamics.com
+# GNU General Public Licence Version 2 or later
+
 import logging
 import types
 import logging

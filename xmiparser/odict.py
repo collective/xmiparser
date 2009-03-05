@@ -1,4 +1,7 @@
-# Copied from
+# Copyright 2003-2009, Blue Dynamics Alliance - http://bluedynamics.com
+# GNU General Public Licence Version 2 or later
+
+# Origninal code:
 # http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/107747
 # which has the same license as Python (i.e. GPL compatible)
 

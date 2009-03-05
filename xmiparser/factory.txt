@@ -1,0 +1,23 @@
+XMIParser model factory
+=======================
+
+The way to get a ``xmiparser.interfaces.IModel`` implementation is some kind
+of heavy, so this package provides a factory to do the job for you, done via an
+utility.
+
+As input, the factory accepts ``*.zargo``, ``*.zuml`` and ``*.xmi`` files,
+expecting the file path.
+
+  >>> from zope.component import getUtility
+  >>> from xmiparser.interfaces import IModelFactory
+  >>> factory = getUtility(IModelFactory)
+
+get a clue what self.generate_packages and self.generate_datatypes on
+ArchetypesGenerator should be good for.
+
+  model = factory('foo/bar',
+                  packages=self.generate_packages,
+                  generate_datatypes=self.generate_datatypes,
+                  profile_dir=self.options.option('profile_dir'))
+  >>> # model
+  
