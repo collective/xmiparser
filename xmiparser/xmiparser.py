@@ -18,6 +18,7 @@ from sets import Set
 from odict import odict
 from xml.dom import minidom
 from zope.interface import implements
+from stripogram import html2text
 from utils import mapName
 from utils import toBoolean
 from utils import normalize
@@ -26,14 +27,6 @@ from interfaces import IPackage
 import zargoparser
 
 log = logging.getLogger('XMIparser')
-
-has_stripogram = 1
-try:
-    from stripogram import html2text
-except ImportError:
-    has_stripogram = 0
-    def html2text(s, *args, **kwargs):
-        return s
 
 # Set default wrap width
 default_wrap_width = 64
@@ -999,9 +992,7 @@ class XMIElement(object):
             return ''
         if wrap == -1:
             wrap = default_wrap_width
-        if has_stripogram and striphtml:
-            log.debug("Stripping html.")
-            doc = html2text(doc, (), 0, 1000000).strip()
+        doc = html2text(doc, (), 0, 1000000).strip()
         if wrap:
             log.debug("Wrapping the documenation.")
             doc = doWrap(doc, wrap)

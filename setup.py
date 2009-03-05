@@ -27,6 +27,7 @@ setup(name='xmiparser',
       install_requires=[
           'setuptools',
           'zope.interface',
+          'stripogram'
       ],
       entry_points="""
       # -*- Entry points: -*-
