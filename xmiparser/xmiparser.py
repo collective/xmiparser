@@ -23,7 +23,7 @@ from utils import mapName
 from utils import toBoolean
 from utils import normalize
 from utils import wrap as doWrap
-from interfaces import IPackage
+from interfaces import IPackage, IModel
 import zargoparser
 
 log = logging.getLogger('XMIparser')
@@ -1479,7 +1479,7 @@ class XMIPackage(XMIElement, StateMachineContainer):
 
 
 class XMIModel(XMIPackage):
-    implements(IPackage)
+    implements(IModel)
     isroot = 1
     parent = None
     diagrams = {}
