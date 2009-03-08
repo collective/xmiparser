@@ -1,3 +1,6 @@
+# Copyright 2003-2009, BlueDynamics Alliance - http://bluedynamics.com
+# GNU General Public License Version 2 or later
+
 from setuptools import setup, find_packages
 import sys, os
 
