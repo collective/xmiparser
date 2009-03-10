@@ -168,11 +168,6 @@ class XMIElement(object):
         log.debug("Getting value for tag '%s' (default=%s). "
                   "Note: we're not doing this recursively.",
                   name, default)
-#===============================================================================
-#        if not tgvRegistry.isRegistered(name, self.classcategory):
-#            # The registry does the complaining :-)
-#            pass
-#===============================================================================
         res = self.taggedValues.get(name, default)
         log.debug("Returning value '%s',", res)
         return res
@@ -205,13 +200,6 @@ class XMIElement(object):
         return False
 
     def getTaggedValues(self):
-#===============================================================================
-#        for tagname in self.taggedValues.keys():
-#            if not tgvRegistry.isRegistered(tagname, self.classcategory, 
-#                                            silent=True):
-#                # The registry does the complaining :-)
-#                pass
-#===============================================================================
         return self.taggedValues
 
     def getDocumentation(self, striphtml=0, wrap=-1):
@@ -227,21 +215,15 @@ class XMIElement(object):
                          all other >0: wrap with this value
         """
 
-        log.debug("Trying to find documentation for this element.")
-        #TODO: create an option on command line to control the page width
-        log.debug("First trying a tagged value.")
+        log.debug("Not Implemented: Trying to find documentation for element.")
 
-        # tagged value documentation? Probably this gets the UML
-        # documentation or so. I mean, having a tagged value for
-        # this?!?
-        # returning an empty string to get rid of the "unregistered
-        # TGV" warnings.
-        if True:
-            return ''
+        # XXX TODO: fetch UML documentation? 
+        return ''
+
         # The rest isn't executed.
-        doc = self.getTaggedValue('documentation')
+        doc = documentation_of_element #todo
         if not doc:
-            log.debug("Didn't find a tagged value 'documentation'. "
+            log.debug("Didn't find a 'documentation'. "
                       "Returning empty string.")
             return ''
         if wrap == -1:
