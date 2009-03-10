@@ -2,28 +2,30 @@
 # GNU General Public Licence Version 2 or later
 
 from zope.interface import Interface
+from zope.interface import Attribute
+from zope.location.interfaces import ILocation
+from zope.annotation.interfaces import IAttributeAnnotatable
 
 class IModelFactory(Interface):
     """factory return IModel implementing instance.
     """
     
-    def __call__(xschemaFileName=None,
-                 xschema=None,
-                 packages=[],
-                 profile_dir=None,
-                 **kw):
+    def __call__(sourcepath):
         """Create and return IModel implementing instance.
         
-        XXX: get rid of generator reference.
+        @param sourcepath: Source path of *.xmi, *.zargo, *.zuml
         """
 
-# below interfaces are currently just markers.
-# XXX: Detailes interface definitions.
+class IElement(IAttributeAnnotatable, ILocation):
+    """An XMI Element.
+    """
+    
+    annotations = Attribute(u"The annotations of this element")
 
-class IPackage(Interface):
-    """Package UML Element containing classes.
+class IPackage(IElement):
+    """An XMI Package.
     """
     
 class IModel(IPackage):
-    """Model UML Element containing classes, packages, ...
+    """An XMI Model.
     """

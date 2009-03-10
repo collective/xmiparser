@@ -15,11 +15,7 @@ class ModelFactory(object):
     
     implements(IModelFactory)
     
-    def __call__(self,
-                 xschemaFileName=None,
-                 xschema=None,
-                 packages=[],
-                 profile_dir=None, **kw):
+    def __call__(self, sourcepath):
         global XMI
         profiles_directories = zargoparser.getProfilesDirectories()
         if profile_dir:
