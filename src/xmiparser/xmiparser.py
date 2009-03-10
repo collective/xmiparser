@@ -1,4 +1,3 @@
-# Copyright 2003-2009, BlueDynamics Alliance - http://bluedynamics.com
 # GNU General Public License Version 2 or later
 
 import string
@@ -26,10 +25,7 @@ default_wrap_width = 64
 # Tag constants
 clean_trans = string.maketrans(':-. /$', '______')
 
-class NoObject(object):
-    pass
 
-_marker = NoObject()
 allObjects = {}
 
 class PseudoElement(object):
@@ -73,7 +69,7 @@ class XMIElement(object):
         self.__dict__.update(kwargs)
         if domElement:
             allObjects[domElement.getAttribute('xmi.id')] = self
-            self.initFromDOM(domElement)
+            self._initFromDOM(domElement)
             self.buildChildren(domElement)
 
     def __str__(self):
@@ -119,7 +115,7 @@ class XMIElement(object):
     def setTaggedValue(self, k, v):
         self.taggedValues[k] = v
 
-    def initFromDOM(self, domElement):
+    def _initFromDOM(self, domElement):
         if not domElement:
             domElement = self.domElement
 
@@ -320,7 +316,7 @@ class XMIElement(object):
     def isIntrinsicType(self):
         return str(self.getType()).startswith('xs:')
 
-    def buildChildren(self, domElement):
+    def _buildChildren(self, domElement):
         pass
 
     def getMethodDefs(self, recursive=0):
@@ -431,7 +427,9 @@ class XMIElement(object):
         return res
 
 class StateMachineContainer(object):
-    def __init__(self):
+    """Mixin class"""
+    
+    def __init__(self, el):
         self.statemachines = []
 
     def findStateMachines(self):
@@ -499,13 +497,14 @@ class StateMachineContainer(object):
 
 
 class XMIPackage(XMIElement, StateMachineContainer):
+    
     implements(IPackage)
+
     project = None
     isroot = 0
 
     def __init__(self, el):
-        XMIElement.__init__(self, el)
-        StateMachineContainer.__init__(self)
+        super(XMIPackage, self).__init__(self, el)
         self.classes = []
         self.interfaces = []
         self.packages = []
@@ -514,23 +513,14 @@ class XMIPackage(XMIElement, StateMachineContainer):
         # single products. Ignored when not set.
         self.outputDirectoryName = None
 
-    def initFromDOM(self, domElement=None):
+    def _initFromDOM(self, domElement=None):
         self.parentPackage = None
-        XMIElement.initFromDOM(self, domElement)
-
-    def setParent(self, parent):
-        self.parent = parent
-
-    def getParent(self):
-        return self.parent
+        super(XMIPackage, self)._initFromDOM(self, domElement)
 
     def getClasses(self, recursive=0, ignoreInternals=True):
         res = [c for c in self.classes]
         if ignoreInternals:
-            res=[c for c in self.classes if not c.isInternal()]
-        else:
-            res = self.classes
-            
+            res = [c for c in self.classes if not c.isInternal()]            
         if recursive:
             res = list(res)
             for p in self.getPackages():
@@ -813,8 +803,8 @@ class XMIClass(XMIElement, StateMachineContainer):
     def setPackage(self, p):
         self.package = p
 
-    def initFromDOM(self, domElement):
-        XMIElement.initFromDOM(self, domElement)
+    def _initFromDOM(self, domElement):
+        XMIElement._initFromDOM(self, domElement)
         XMI.calcClassAbstract(self)
         XMI.calcVisibility(self)
         XMI.calcOwnerScope(self)
@@ -877,7 +867,7 @@ class XMIClass(XMIElement, StateMachineContainer):
         log.debug("Found the following parents: '%r'.", res)
         return res
 
-    def buildChildren(self, domElement):
+    def _buildChildren(self, domElement):
 
         for el in domElement.getElementsByTagName(XMI.ATTRIBUTE):
             att = XMIAttribute(el)
@@ -1157,8 +1147,8 @@ class XMIMethodParameter(XMIElement):
                 self.default = default
                 self.has_default = 1
 
-    def initFromDOM(self, domElement):
-        XMIElement.initFromDOM(self, domElement)
+    def _initFromDOM(self, domElement):
+        XMIElement._initFromDOM(self, domElement)
         if domElement:
             self.findDefault()
 
@@ -1182,8 +1172,8 @@ class XMIMethod (XMIElement):
             log.debug("Params of the method: %r.",
                       self.params)
 
-    def initFromDOM(self, domElement):
-        XMIElement.initFromDOM(self, domElement)
+    def _initFromDOM(self, domElement):
+        XMIElement._initFromDOM(self, domElement)
         XMI.calcVisibility(self)
         XMI.calcOwnerScope(self)
         if domElement:
@@ -1248,8 +1238,8 @@ class XMIAttribute (XMIElement):
                 self.default = default
                 self.has_default = 1
 
-    def initFromDOM(self, domElement):
-        XMIElement.initFromDOM(self, domElement)
+    def _initFromDOM(self, domElement):
+        XMIElement._initFromDOM(self, domElement)
         XMI.calcVisibility(self)
         if domElement:
             self.calcType()
@@ -1299,8 +1289,8 @@ class XMIAssocEnd (XMIElement):
             else:
                 return self.getId()
 
-    def initFromDOM(self, el):
-        XMIElement.initFromDOM(self, el)
+    def _initFromDOM(self, el):
+        XMIElement._initFromDOM(self, el)
         navigable = 'isNavigable'
         val = el.getAttribute(navigable) 
         if not val:
@@ -1393,8 +1383,8 @@ class XMIAssociation (XMIElement):
                 log.debug("Making it lowercase for good measure: '%s'.", res)
         return res
 
-    def initFromDOM(self, domElement=None):
-        XMIElement.initFromDOM(self, domElement)
+    def _initFromDOM(self, domElement=None):
+        XMIElement._initFromDOM(self, domElement)
         self.calcEnds()
 
     def calcEnds(self):
@@ -1411,8 +1401,8 @@ class XMIAssociation (XMIElement):
 class XMIAssociationClass (XMIClass, XMIAssociation):
     isAssociationClass = 1
 
-    def initFromDOM(self, domElement=None):
-        XMIClass.initFromDOM(self, domElement)
+    def _initFromDOM(self, domElement=None):
+        XMIClass._initFromDOM(self, domElement)
         self.calcEnds()
 
 class XMIAbstraction(XMIElement):
@@ -1429,8 +1419,8 @@ class XMIDependency(XMIElement):
     def getClient(self):
         return self.client
 
-    def initFromDOM(self, domElement=None):
-        XMIElement.initFromDOM(self, domElement)
+    def _initFromDOM(self, domElement=None):
+        XMIElement._initFromDOM(self, domElement)
         self.calcEnds()
 
     def calcEnds(self):
@@ -1457,15 +1447,14 @@ class XMIStateMachine(XMIElement):
         self.states = []    
         self.transitions = []
         self.classes = []
-        XMIElement.__init__(self, *args, **kwargs)
+        super(XMIStateMachine, self).__init__(self, *args, **kwargs)
         self.setParent(kwargs.get('parent', None))
         log.debug("Created statemachine '%s'.", self.getId())
 
-    def initFromDOM(self, domElement=None):
-        XMIElement.initFromDOM(self, domElement)
-        self.buildTransitions()
-        self.buildStates()
-        self.associateClasses()
+    def _initFromDOM(self, domElement=None):
+        self._buildTransitions()
+        self._buildStates()
+        self._associateClasses()
 
     def addState(self, state):
         self.states.append(state)
@@ -1494,7 +1483,7 @@ class XMIStateMachine(XMIElement):
                 self.getStates(no_duplicates=no_duplicates) if s.getName()]
 
 
-    def associateClasses(self):
+    def _associateClasses(self):
         context = getElementByTagName(self.domElement,
                                       XMI.STATEMACHINE_CONTEXT, None)
         if context:
@@ -1533,7 +1522,7 @@ class XMIStateMachine(XMIElement):
                 self.getTransitions(no_duplicates=no_duplicates)
                 if t.getName()]
 
-    def buildStates(self):
+    def _buildStates(self):
         log.debug("Building states...")
         sels = getElementsByTagName(self.domElement, XMI.SIMPLESTATE,
                                     recursive=1)
@@ -1559,7 +1548,7 @@ class XMIStateMachine(XMIElement):
             state = XMIState(sel)
             self.addState(state)
 
-    def buildTransitions(self):
+    def _buildTransitions(self):
         tels = getElementsByTagName(self.domElement, XMI.TRANSITION,
                                     recursive=1)
         for tel in tels:
@@ -1622,8 +1611,8 @@ class XMIStateTransition(XMIElement):
     action = None
     guard = None
 
-    def initFromDOM(self, domElement=None):
-        XMIElement.initFromDOM(self, domElement)
+    def _initFromDOM(self, domElement=None):
+        XMIElement._initFromDOM(self, domElement)
         self.buildEffect()
         self.buildGuard()
 
@@ -1748,8 +1737,8 @@ class XMIStateTransition(XMIElement):
 
 class XMIAction(XMIElement):
     expression = None
-    def initFromDOM(self, domElement=None):
-        XMIElement.initFromDOM(self, domElement)
+    def _initFromDOM(self, domElement=None):
+        XMIElement._initFromDOM(self, domElement)
         self.expression = XMI.getExpressionBody(self.domElement,
                                                 tagname=XMI.ACTION_EXPRESSION)
 
@@ -1789,8 +1778,8 @@ class XMIAction(XMIElement):
 
 class XMIGuard(XMIElement):
     expression = None
-    def initFromDOM(self, domElement=None):
-        XMIElement.initFromDOM(self, domElement)
+    def _initFromDOM(self, domElement=None):
+        XMIElement._initFromDOM(self, domElement)
         self.expression = XMI.getExpressionBody(self.domElement,
                                                 tagname=XMI.BOOLEAN_EXPRESSION)
 
@@ -1806,8 +1795,8 @@ class XMIState(XMIElement):
         self.outgoingTransitions = []
         XMIElement.__init__(self, *args, **kwargs)
 
-    def initFromDOM(self, domElement=None):
-        XMIElement.initFromDOM(self, domElement)
+    def _initFromDOM(self, domElement=None):
+        XMIElement._initFromDOM(self, domElement)
         self.associateTransitions()
 
     def associateTransitions(self):
@@ -1885,8 +1874,8 @@ diagramsByModel = {}
 class XMIDiagram(XMIElement):
     modelElement = None
 
-    def initFromDOM(self, domElement=None):
-        XMIElement.initFromDOM(self, domElement)
+    def _initFromDOM(self, domElement=None):
+        XMIElement._initFromDOM(self, domElement)
         self.buildSemanticBridge()
 
     def buildSemanticBridge(self):

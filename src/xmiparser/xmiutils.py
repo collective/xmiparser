@@ -1,6 +1,8 @@
 # Copyright 2003-2009, BlueDynamics Alliance - http://bluedynamics.com
 # GNU General Public License Version 2 or later
 
+_marker = object()
+
 def getSubElements(domElement):
     return [e for e in domElement.childNodes if e.nodeType == e.ELEMENT_NODE]
 
@@ -33,15 +35,6 @@ def getAttributeValue(domElement, tagName=None, default=_marker, recursive=0,
         return default
     return el.firstChild.nodeValue
 
-def getAttributeOrElement(domElement, name, default=_marker, recursive=0):
-    """Tries to get the value from an attribute, if not found, it tries
-    to get it from a subelement that has the name {element.name}.{name}.
-    """
-    val = domElement.getAttribute(name)
-    if not val:
-        val = getAttributeValue(domElement, domElement.tagName+'.'+name,
-                                default, recursive)
-    return val
 
 def getElementsByTagName(domElement, tagName, recursive=0):
     """Returns elements by tag name.

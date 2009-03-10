@@ -1,12 +1,12 @@
 # Copyright 2003-2009, BlueDynamics Alliance - http://bluedynamics.com
 # GNU General Public License Version 2 or later
 
-from zope.interface import implements
-from interfaces import IModelFactory
-
+import os
 import logging
 from zipfile import ZipFile
 from xml.dom import minidom
+from zope.interface import implements
+from interfaces import IModelFactory
 import zargoparser
 import xmiutils
 
@@ -15,12 +15,9 @@ log = logging.getLogger('XMIparser')
 class ModelFactory(object):
     
     implements(IModelFactory)
-    
-    
+      
     def __call__(self, sourcepath):
         profiles_directories = zargoparser.getProfilesDirectories()
-        if profile_dir:
-            profiles_directories[0:0] = [profile_dir]
         profile_docs = {}
         if profiles_directories:
             log.info("Directories to search for profiles: %s",
@@ -28,11 +25,11 @@ class ModelFactory(object):
         XMI = None
     
         log.info("Parsing...")
-        if xschemaFileName:
-            suff = os.path.splitext(xschemaFileName)[1].lower()
+        if sourcepath:
+            suff = os.path.splitext(sourcepath)[1].lower()
             if suff in ('.zargo', '.zuml', '.zip'):
                 log.debug("Opening %s ..." % suff)
-                zf = ZipFile(xschemaFileName)
+                zf = ZipFile(sourcepath)
                 xmis = [n for n in zf.namelist() \
                         if os.path.splitext(n)[1].lower() in ('.xmi','.xml')]
                 assert(len(xmis)==1)
