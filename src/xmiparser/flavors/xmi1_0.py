@@ -115,6 +115,7 @@ class XMI1_0(object):
 
     aggregates = ['composite', 'aggregate']
 
+    # XXX: generator specific, move out of here 
     generate_datatypes=['field','compound_field']
 
     def __init__(self, **kw):
@@ -437,9 +438,3 @@ class XMI1_0(object):
     def getModel(self, doc):
         content = self.getContent(doc)
         return getElementByTagName(content, self.MODEL, recursive=0)
-
-    def getGenerator(self):
-        return getattr(self, 'generator', None)
-
-    def getGenerationOption(self, opt):
-        return getattr(self.getGenerator(), opt, None)

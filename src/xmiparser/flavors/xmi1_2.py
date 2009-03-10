@@ -9,11 +9,13 @@ class XMI1_2(XMI1_1):
     # XMI version specific stuff goes there
 
     def isAssocEndAggregation(self, el):
-        # Sig: AFAIK non-folderish items can't be turned into folderish items at run time (e.g. via an adapter)
-        # therefore, if an assocEnd ends at a flavor, it should never be considered as an aggregation end
-        # unless we know how to let ContentFlavor folderize that item
+        # Sig: AFAIK non-folderish items can't be turned into folderish items 
+        # at run time (e.g. via an adapter) therefore, if an assocEnd ends at a 
+        # flavor, it should never be considered as an aggregation end unless we 
+        # know how to let ContentFlavor folderize that item
         isFlavorEnd = False
-        if hasattr(el,"hasStereotype"):
+        if hasattr(el, "hasStereotype"):
+            # XXX this is generator logic, move it out of here
             isFlavorEnd = el.hasStereotype('flavor')
         return str(el.getAttribute('aggregation')) in self.aggregates \
                and not isFlavorEnd

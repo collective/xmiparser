@@ -1823,6 +1823,7 @@ class XMIState(XMIElement):
 
         This method mimics that, but also looks at the TGV 'label'
         """
+        # XXX this is generator specific!! move it away from in xmiparser
         fromDocumentation = self.getDocumentation(striphtml=striphtml)
         fromTaggedValue = self.getTaggedValue('label', None)
         default = self.getName()
