@@ -884,6 +884,7 @@ class XMIClass(XMIElement, StateMachineContainer):
             log.debug("We are to generate the 'title' and 'id' fields for this class, "
                       "whether or not they are defined in the UML model.")
             if not self.hasAttribute('title'):
+                # XXX: EEEEKKKKK
                 title = XMIAttribute()
                 title.id = 'title'
                 title.name = 'title'
@@ -896,6 +897,7 @@ class XMIClass(XMIElement, StateMachineContainer):
                 self.addAttributeDef(title, 0)
 
             if not self.hasAttribute('id'):
+                # XXX: EEEEKKKKK again
                 id = XMIAttribute()
                 id.id = 'id'
                 id.name = 'id'
