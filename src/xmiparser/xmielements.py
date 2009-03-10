@@ -74,7 +74,7 @@ class XMIElement(object):
             self._initFromDOM()            
 
     def __str__(self):
-        return '<%s %s>' % (self.__class__.__name__, self.getName())
+        return '<%s %s)>' % (self.__class__.__name__, self.getName())
     
     __repr__ = __str__
     
@@ -92,7 +92,7 @@ class XMIElement(object):
     def getParent(self):
         return self.__parent__
 
-    def parseTaggedValues(self):
+    def _parseTaggedValues(self):
         """Gather the tagnames and tagvalues for the element.
         """
         log.debug("Gathering the taggedvalues for element %s.", self.__name__)
@@ -130,8 +130,8 @@ class XMIElement(object):
         self.__name__ = self.XMI.getName(domElement)
         log.debug("Initializing from DOM: name='%s', id='%s'.",
                   self.__name__, self.id)
-        self.parseTaggedValues()
-        self.calculateStereoType()
+        self._parseTaggedValues()
+        self._calculateStereoType()
         mult = getElementByTagName(domElement, self.XMI.MULTIPLICITY, None)
         if mult:
             maxNodes = mult.getElementsByTagName(self.XMI.MULT_MAX)
@@ -320,7 +320,7 @@ class XMIElement(object):
             log.debug("Our total methods: %r.", res)
         return res
 
-    def calculateStereoType(self):
+    def _calculateStereoType(self):
         return self.XMI.calculateStereoType(self)
 
     def setStereoType(self, st):
@@ -862,32 +862,33 @@ class XMIClass(XMIElement, StateMachineContainer):
             meth.setParent(self)
             self.addMethodDefs(meth)
 
-        if self.XMI.getGenerationOption('default_field_generation'):
-            log.debug("We are to generate the 'title' and 'id' fields for this class, "
-                      "whether or not they are defined in the UML model.")
-            if not self.hasAttribute('title'):
-                # XXX: EEEEKKKKK
-                title = XMIAttribute()
-                title.id = 'title'
-                title.name = 'title'
-                title.setTaggedValue('widget:label_msgid', "label_title")
-                title.setTaggedValue('widget:i18n_domain', "plone")
-                title.setTaggedValue('widget:description_msgid', "help_title")
-                title.setTaggedValue('searchable', 'python:True')
-                title.setTaggedValue('accessor', 'Title')
-                title.setParent(self)
-                self.addAttributeDef(title, 0)
-
-            if not self.hasAttribute('id'):
-                # XXX: EEEEKKKKK again
-                id = XMIAttribute()
-                id.id = 'id'
-                id.name = 'id'
-                id.setParent(self)
-                id.setTaggedValue('widget:label_msgid', "label_short_name")
-                id.setTaggedValue('widget:i18n_domain', "plone")
-                id.setTaggedValue('widget:description_msgid', "help_short_name")
-                self.addAttributeDef(id, 0)
+# XXX: this is stuff for the generator!
+#        if self.XMI.getGenerationOption('default_field_generation'):
+#            log.debug("We are to generate the 'title' and 'id' fields for this class, "
+#                      "whether or not they are defined in the UML model.")
+#            if not self.hasAttribute('title'):
+#                # XXX: EEEEKKKKK
+#                title = XMIAttribute()
+#                title.id = 'title'
+#                title.name = 'title'
+#                title.setTaggedValue('widget:label_msgid', "label_title")
+#                title.setTaggedValue('widget:i18n_domain', "plone")
+#                title.setTaggedValue('widget:description_msgid', "help_title")
+#                title.setTaggedValue('searchable', 'python:True')
+#                title.setTaggedValue('accessor', 'Title')
+#                title.setParent(self)
+#                self.addAttributeDef(title, 0)
+#
+#            if not self.hasAttribute('id'):
+#                # XXX: EEEEKKKKK again
+#                id = XMIAttribute()
+#                id.id = 'id'
+#                id.name = 'id'
+#                id.setParent(self)
+#                id.setTaggedValue('widget:label_msgid', "label_short_name")
+#                id.setTaggedValue('widget:i18n_domain', "plone")
+#                id.setTaggedValue('widget:description_msgid', "help_short_name")
+#                self.addAttributeDef(id, 0)
 
     def isComplex(self):
         return True
