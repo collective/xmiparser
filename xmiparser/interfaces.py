@@ -6,6 +6,14 @@ from zope.interface import Attribute
 from zope.location.interfaces import ILocation
 from zope.annotation.interfaces import IAttributeAnnotatable
 
+class IXMIFlavor(Interface):
+    """Holds all information relevant to the different flavors of XMI, such as 
+    its versions: 1.0, 1.1, 1.2
+    
+    The details need to be researched, such as which methods are meant public 
+    and which private and so on. A reverse-engineering task.
+    """ 
+
 class IModelFactory(Interface):
     """factory return IModel implementing instance.
     """

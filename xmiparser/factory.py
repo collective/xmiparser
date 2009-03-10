@@ -8,6 +8,7 @@ import logging
 from zipfile import ZipFile
 from xml.dom import minidom
 import zargoparser
+import xmiutils
 
 log = logging.getLogger('XMIparser')
 
@@ -15,8 +16,8 @@ class ModelFactory(object):
     
     implements(IModelFactory)
     
+    
     def __call__(self, sourcepath):
-        global XMI
         profiles_directories = zargoparser.getProfilesDirectories()
         if profile_dir:
             profiles_directories[0:0] = [profile_dir]
@@ -24,6 +25,7 @@ class ModelFactory(object):
         if profiles_directories:
             log.info("Directories to search for profiles: %s",
                      str(profiles_directories))
+        XMI = None
     
         log.info("Parsing...")
         if xschemaFileName:
@@ -72,17 +74,107 @@ class ModelFactory(object):
             log.debug("XMI version: %s", xmiver)
             if xmiver >= "1.2":
                 log.debug("Using xmi 1.2 parser.")
-                XMI = XMI1_2(**kw)
+                self.XMI = XMI1_2(**kw)
             elif xmiver >= "1.1":
                 log.debug("Using xmi 1.1 parser.")
-                XMI = XMI1_1(**kw)
+                self.XMI = XMI1_1(**kw)
             else:
                 log.debug("Using xmi 1.0 parser.")
-                XMI = XMI1_0(**kw)
+                self.XMI = XMI1_0(**kw)
         except:
             log.debug("No version info found, taking XMI1_0.")
     
-        root = buildHierarchy(doc, packages, profile_docs=profile_docs)
+        root = self._buildHierarchy(doc, packages, XMI, 
+                                    profile_docs=profile_docs)
         log.debug("Created a root XMI parser.")
-    
         return root
+    
+    def _buildDataTypes(doc, profile=''):
+        datatypes = {}
+        if profile:
+            log.debug("DataType profile: %s", profile)
+            getId = lambda e: profile + "#" + str(e.getAttribute('xmi.id'))
+        else:
+            getId = lambda e: str(e.getAttribute('xmi.id'))
+    
+        dts = doc.getElementsByTagName(self.XMI.DATATYPE)
+    
+        for dt in dts:
+            datatypes[getId(dt)] = dt
+    
+        classes = [c for c in doc.getElementsByTagName(self.XMI.CLASS)]
+    
+        for dt in classes:
+            datatypes[getId(dt)] = dt
+    
+        interfaces = [c for c in doc.getElementsByTagName(self.XMI.INTERFACE)]
+    
+        for dt in interfaces:
+            datatypes[getId(dt)] = dt
+    
+        interfaces = [c for c in doc.getElementsByTagName(self.XMI.ACTOR)]
+    
+        for dt in interfaces:
+            datatypes[getId(dt)] = dt
+    
+        prefix = profile and profile + "#" or ''
+        self.XMI.collectTagDefinitions(doc, prefix=prefix)
+        return datatypes
+    
+    def _buildStereoTypes(self, doc, profile=''):
+        stereotypes = {}
+        if profile:
+            log.debug("Stereotype profile: %s", profile)
+            getId = lambda e: profile + "#" + str(e.getAttribute('xmi.id'))
+        else:
+            getId = lambda e: str(e.getAttribute('xmi.id'))
+        
+        sts = doc.getElementsByTagName(self.XMI.STEREOTYPE)
+    
+        for st in sts:
+            id = st.getAttribute('xmi.id')
+            if not id:
+                continue
+            stereotypes[getId(st)] = st
+        return stereotypes
+    
+    def _buildHierarchy(self, doc, packagenames, profile_docs=None):
+        """Builds Hierarchy out of the doc."""
+        self._datatypenames = ['int', 'void', 'string'] #XXX
+        if profile_docs: 
+            for profile_key, profile_doc in profile_docs.items():
+                _buildDataTypes(profile_doc, profile=profile_key)
+                _buildStereoTypes(profile_doc,profile=profile_key)
+    
+        datatypes = self._buildDataTypes(doc)
+        stereotypes = self.buildStereoTypes(doc)
+        res = XMIModel(doc)
+    
+        packageElements = doc.getElementsByTagName(self.XMI.PACKAGE)
+        if packagenames: #XXX: TODO support for more than one package
+            packageElements = doc.getElementsByTagName(self.XMI.PACKAGE)
+            for p in packageElements:
+                n = self.XMI.getName(p)
+                if n in packagenames:
+                    doc = p
+                    break
+    
+        res.buildPackages()
+        res.buildClassesAndInterfaces()
+        res.buildStateMachines()
+        res.buildDiagrams()
+        res.associateClassesToStateMachines()
+    
+        for c in res.getClasses(recursive=1):
+            if c.getName() in datatypenames and not \
+               c.hasStereoType(self.XMI.generate_datatypes) and c.isEmpty():
+                c.internalOnly = 1
+                log.debug("Internal class (not generated): '%s'.", c.getName())
+    
+        self.XMI.buildRelations(doc, allObjects)
+        self.XMI.buildGeneralizations(doc, allObjects)
+        self.XMI.buildRealizations(doc, allObjects)
+        self.XMI.buildDependencies(doc, allObjects)
+    
+        return res
+        

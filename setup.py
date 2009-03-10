@@ -4,7 +4,7 @@
 from setuptools import setup, find_packages
 import sys, os
 
-version = '1.4'
+version = '2.0'
 shortdesc = "XMI Parser (API for the UML XML representation specified by OMG)"
 longdesc = open(os.path.join(os.path.dirname(__file__), 'README.txt')).read()
 packages=find_packages(exclude=['ez_setup',])
@@ -19,7 +19,7 @@ setup(name='xmiparser',
             'Operating System :: OS Independent',
       ],
       keywords='uml, xmi, parser',
-      author='Philipp Auersperg, Jens Klein, Robert Niederreiter',
+      author='Philipp Auersperg, Jens Klein, Robert Niederreiter, et al',
       author_email='dev@bluedynamics.com',
       url='https://svn.plone.org/svn/collective/xmiparser',
       license='GNU General Public Licence',
