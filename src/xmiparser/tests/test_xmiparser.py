@@ -1,6 +1,7 @@
 # Copyright 2003-2009, BlueDynamics Alliance - http://bluedynamics.com
 # GNU General Public License Version 2 or later
 
+import os
 import unittest
 import zope.component
 from pprint import pprint
@@ -19,6 +20,8 @@ TESTFILES = [
     '../xmiparser.txt',
 ]
 
+datadir = os.path.join(os.path.dirname(__file__), 'data') 
+
 def test_suite():
     XMLConfig('meta.zcml', zope.component)()
     XMLConfig('configure.zcml', xmiparser)()
@@ -28,7 +31,8 @@ def test_suite():
             file, 
             optionflags=optionflags,
             globs={'interact': interact,
-                   'pprint': pprint},
+                   'pprint': pprint,
+                   'datadir': datadir,},
         ) for file in TESTFILES
     ])
 

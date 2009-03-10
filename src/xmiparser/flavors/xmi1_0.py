@@ -2,7 +2,10 @@
 # GNU General Public License Version 2 or later
 
 from zope.interface import implements
-from interfaces import IXMIFlavor
+from xmiparser.interfaces import IXMIFlavor
+from xmiparser.utils import normalize
+from xmiparser.xmiutils import getElementByTagName
+from xmiparser.xmiutils import getElementsByTagName
 
 class XMI1_0(object):
     
@@ -366,7 +369,7 @@ class XMI1_0(object):
                             doReplace)
         return tagname, tagvalue
 
-    def collectTagDefinitions(self, el):
+    def collectTagDefinitions(self, el, **kw):
         raise NotImplementedError, 'Only needed in xmi >=1.1'
 
     def calculateStereoType(self, o):

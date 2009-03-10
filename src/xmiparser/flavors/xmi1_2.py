@@ -2,6 +2,7 @@
 # GNU General Public License Version 2 or later
 
 from xmi1_1 import XMI1_1 
+from xmiparser.xmiutils import getElementsByTagName
 
 class XMI1_2(XMI1_1):
     TAGGED_VALUE_VALUE = "UML:TaggedValue.dataValue"

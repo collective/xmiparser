@@ -2,6 +2,7 @@
 # GNU General Public License Version 2 or later
 
 from xmi1_0 import XMI1_0 
+from xmiparser.utils import normalize
 
 class XMI1_1(XMI1_0):
     # XMI version specific stuff goes there

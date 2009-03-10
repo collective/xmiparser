@@ -23,10 +23,14 @@ class IModelFactory(Interface):
         
         @param sourcepath: Source path of *.xmi, *.zargo, *.zuml
         """
+##########    
+# ELEMENTS
 
 class IElement(IAttributeAnnotatable, ILocation):
     """An XMI Element.
     """
+    
+    XMI = Attribute(u"the current IXMIFlavor instance")
     
     annotations = Attribute(u"The annotations of this element")
 
