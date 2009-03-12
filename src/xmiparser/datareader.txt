@@ -1,0 +1,39 @@
+
+Data Readers
+============
+
+Data readers are used by handlers for reading data from the elements. The are
+registered as adapters.
+
+  >>> from xmiparser.interfaces import ITGV
+  >>> from xmiparser.interfaces import IStereotype
+  >>> from xmiparser.interfaces import IAnnotation
+
+Create a dummy XMIElement
+
+  >>> from zope.interface import implements
+  >>> from xmiparser.interfaces import IXMIElement
+  >>> class XMIElement(object):
+  ...     implements(IXMIElement)
+  
+Create dummy XMI element.
+
+  >>> element = XMIElement()
+
+Data reader for tagged values.
+
+  >>> tgv = ITGV(element)
+  >>> tgv
+  <xmiparser.datareader.TGV object at ...>
+
+Data reader for stereotypes.
+
+  >>> stereotype = IStereotype(element)
+  >>> stereotype
+  <xmiparser.datareader.Stereotype object at ...>
+
+Data reader for annotations.
+
+  >>> annotation = IAnnotation(element)
+  >>> annotation
+  <xmiparser.datareader.Annotation object at ...>

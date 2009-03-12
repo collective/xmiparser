@@ -14,10 +14,28 @@ from xmiparser.utils import wrap as doWrap
 from xmiparser.utils import clean_trans
 from xmiparser.xmiutils import getElementByTagName
 from xmiparser.xmiutils import getElementsByTagName
+from xmiparser.interfaces import IXMIStateMachineContainer
 from xmiparser.interfaces import IXMIElement
 from xmiparser.interfaces import IXMIPackage
 from xmiparser.interfaces import IXMIModel
-
+from xmiparser.interfaces import IXMIClass
+from xmiparser.interfaces import IXMIInterface
+from xmiparser.interfaces import IXMIMethodParameter
+from xmiparser.interfaces import IXMIMethod
+from xmiparser.interfaces import IXMIAttribute
+from xmiparser.interfaces import IXMIAssocEnd
+from xmiparser.interfaces import IXMIAssociation
+from xmiparser.interfaces import IXMIAssociationClass
+from xmiparser.interfaces import IXMIAbstraction
+from xmiparser.interfaces import IXMIDependency
+from xmiparser.interfaces import IXMIStateMachine
+from xmiparser.interfaces import IXMIStateTransition
+from xmiparser.interfaces import IXMIAction
+from xmiparser.interfaces import IXMIGuard
+from xmiparser.interfaces import IXMIState
+from xmiparser.interfaces import IXMICompositeState
+from xmiparser.interfaces import IXMIDiagram
+    
 log = logging.getLogger('XMIparser')
 
 allObjects = {} # XXX i dont like this concept of a global dict (jensens)
@@ -41,6 +59,8 @@ class XMIElement(object):
     __parent__ = None
     __name__ = None
     __XMI__ = None
+    
+    elementname = u'XMIElement'
         
     def __init__(self, parent, domElement=None, name='', *args, **kwargs):
         self.domElement = domElement
@@ -329,7 +349,12 @@ class XMIElement(object):
         return res
 
 class StateMachineContainer(object):
-    """Mixin class"""
+    """Mixin to be a statemachine container.
+    """
+    
+    implements(IXMIStateMachineContainer)
+    
+    elementname = u'XMIStateMachineContainer'
        
     def __init__(self, pa, el):
         self.statemachines = []
@@ -397,10 +422,11 @@ class StateMachineContainer(object):
     def getStateMachines(self):
         return self.statemachines
 
-
 class XMIPackage(StateMachineContainer, XMIElement):
     
     implements(IXMIPackage)
+    
+    elementname = u'XMIPackage'
 
     project = None
     isroot = 0
@@ -602,10 +628,11 @@ class XMIPackage(StateMachineContainer, XMIElement):
         path = self.getPath(includeRoot=includeRoot, parent=ref)
         return ".".join([p.xminame for p in path])
 
-
 class XMIModel(XMIPackage):
     
     implements(IXMIModel)
+    
+    elementname = u'XMIModel'
 
     isroot = 1
     parent = None
@@ -671,8 +698,12 @@ class XMIModel(XMIPackage):
                 continue
             smdict[uf].addClass(cl)
 
-
 class XMIClass(XMIElement, StateMachineContainer):
+    
+    implements(IXMIClass)
+    
+    elementname = u'XMIClass'
+    
     package = None
     isinterface = 0
     # [Reinout] Doesn't this mean that there's just one class-wide
@@ -1016,12 +1047,20 @@ class XMIClass(XMIElement, StateMachineContainer):
     def getStateMachine(self):
         return self.statemachine
 
-
 class XMIInterface(XMIClass):
+    
+    implements(IXMIInterface)
+    
+    elementname = u'XMIInterface'
+    
     isinterface = 1
 
-
 class XMIMethodParameter(XMIElement):
+    
+    implements(IXMIMethodParameter)
+    
+    elementname = u'XMIMethodParameter'
+    
     default = None
     has_default = 0
 
@@ -1054,6 +1093,11 @@ class XMIMethodParameter(XMIElement):
             return self.xminame
 
 class XMIMethod (XMIElement):
+    
+    implements(IXMIMethod)
+    
+    elementname = u'XMIMethod'
+    
     params = []
 
     def _buildParameters(self):
@@ -1108,6 +1152,11 @@ class XMIMethod (XMIElement):
         return name
 
 class XMIAttribute (XMIElement):
+    
+    implements(IXMIAttribute)
+    
+    elementname = u'XMIAttribute'
+    
     default = None
     has_default = 0
 
@@ -1150,8 +1199,11 @@ class XMIAttribute (XMIElement):
     def getUpperBound(self):
         return self.getMultiplicity()[1]
 
-
 class XMIAssocEnd (XMIElement):
+    
+    implements(IXMIAssocEnd)
+    
+    elementname = u'XMIAssocEnd'
 
     def associationEndName(self, ignore_cardinality=0):
         name = str(self.__name__)
@@ -1200,6 +1252,11 @@ class XMIAssocEnd (XMIElement):
         return self.getMultiplicity()[1]
 
 class XMIAssociation (XMIElement):
+    
+    implements(IXMIAssociation)
+    
+    elementname = u'XMIAssociation'
+    
     fromEnd = None
     toEnd = None
 
@@ -1277,12 +1334,25 @@ class XMIAssociation (XMIElement):
             return self.fromEnd.getTarget()
 
 class XMIAssociationClass(XMIClass, XMIAssociation):
+    
+    implements(IXMIAssociationClass)
+    
+    elementname = u'XMIAssociationClass'
+    
     isAssociationClass = 1
 
 class XMIAbstraction(XMIElement):
-    pass
+    
+    implements(IXMIAbstraction)
+    
+    elementname = u'XMIAbstraction'
 
 class XMIDependency(XMIElement):
+    
+    implements(IXMIDependency)
+    
+    elementname = u'XMIDependency'
+    
     client = None
     supplier = None
 
@@ -1311,11 +1381,11 @@ class XMIDependency(XMIElement):
         if self.client:
             return self.client
 
-#-----------------------------------
-# Workflow support
-#-----------------------------------
-
 class XMIStateMachine(XMIElement):
+    
+    implements(IXMIStateMachine)
+    
+    elementname = u'XMIStateMachine'
     
     def __init__(self, *args, **kwargs):        
         self.states = []    
@@ -1476,8 +1546,12 @@ class XMIStateMachine(XMIElement):
                 actionnames.add(action.getAfterActionName())
         return list(actionnames)
 
-
 class XMIStateTransition(XMIElement):
+    
+    implements(IXMIStateTransition)
+    
+    elementname = u'XMIStateTransition'
+    
     targetState = None
     sourceState = None
     action = None
@@ -1606,8 +1680,12 @@ class XMIStateTransition(XMIElement):
         trigger_type = trigger_types.get(trigger_type, trigger_type)
         return trigger_type
 
-
 class XMIAction(XMIElement):
+    
+    implements(IXMIAction)
+    
+    elementname = u'XMIAction'
+    
     expression = None
     
     def _initFromDOM(self):
@@ -1648,9 +1726,14 @@ class XMIAction(XMIElement):
             result.append(after)
         return result
 
-
 class XMIGuard(XMIElement):
+    
+    implements(IXMIGuard)
+    
+    elementname = u'XMIGuard'
+    
     expression = None
+    
     def _initFromDOM(self):
         super(XMIGuard, self)._initFromDOM()
         self.expression = self.XMI.getExpressionBody(self.domElement,
@@ -1659,8 +1742,12 @@ class XMIGuard(XMIElement):
     def getExpressionBody(self):
         return self.expression
 
-
 class XMIState(XMIElement):
+    
+    implements(IXMIState)
+    
+    elementname = u'XMIState'
+    
     isinitial = 0
 
     def __init__(self, *args, **kwargs):
@@ -1731,7 +1818,10 @@ class XMIState(XMIElement):
         return fromTaggedValue or fromDocumentation or default
 
 class XMICompositeState(XMIState):
-    pass
+    
+    implements(IXMICompositeState)
+    
+    elementname = u'XMICompositeState'
 
 # Necessary for Poseidon because in Poseidon we cannot assign a name
 # to a statemachine, so we have to pull the name of the statemachine
@@ -1740,6 +1830,11 @@ diagrams = {}
 diagramsByModel = {}
 
 class XMIDiagram(XMIElement):
+    
+    implements(IXMIDiagram)
+    
+    elementname = u'XMIDiagram'
+    
     modelElement = None
 
     def _initFromDOM(self):
@@ -1774,4 +1869,3 @@ class XMIDiagram(XMIElement):
 
     def getModelElement(self):
         return self.modelElement
-
