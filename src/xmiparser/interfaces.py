@@ -26,7 +26,7 @@ class IModelFactory(Interface):
 ##########    
 # ELEMENTS
 
-class IElement(IAttributeAnnotatable, ILocation):
+class IXMIElement(IAttributeAnnotatable, ILocation):
     """An XMI Element.
     """
     
