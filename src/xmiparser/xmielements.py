@@ -33,7 +33,7 @@ class PseudoElement(object):
         return self.__name__
 
     def getModuleName(self):
-        return self.getName()
+        return self.xminame
 
 class XMIElement(object):
     
@@ -43,8 +43,6 @@ class XMIElement(object):
     __name__ = None
     __XMI__ = None
         
-    package = None
-
     def __init__(self, parent, domElement=None, name='', *args, **kwargs):
         self.domElement = domElement
         self.__name__ = name
@@ -68,7 +66,7 @@ class XMIElement(object):
             self._initFromDOM()            
 
     def __str__(self):
-        return '<%s %s)>' % (self.__class__.__name__, self.getName())
+        return '<%s %s)>' % (self.__class__.__name__, self.xminame)
     
     __repr__ = __str__
     
@@ -107,7 +105,7 @@ class XMIElement(object):
                 log.warn("Broken tagged value in id '%s'.",
                          self.XMI.getId(self.domElement))
         log.debug("Found the following tagged values: %r.",
-                  self.getTaggedValues())
+                  self.tgvs)
 
     def _initFromDOM(self):
         domElement = self.domElement
@@ -132,57 +130,42 @@ class XMIElement(object):
         domElement.xmiElement = self
         self._buildChildren(domElement)
 
-    def addSubType(self, st):
-        self.subTypes.append(st)
-
-    def getName(self, doReplace=False):
+    @property
+    def name(self):
         if self.__name__:
-            res = self.__name__
+            normalize(self.__name__)
         else:
-            res = self.id
-        return normalize(res, doReplace)
+            normalize(self.id)
+        return normalize(res)
     
     @property
     def classcategory(self):
         return "%s.%s" % (self.__class__.__module__, self.__class__.__name__)
-
-    def getTaggedValue(self, name, default=''):
-        log.debug("Getting value for tag '%s' (default=%s). "
-                  "Note: we're not doing this recursively.",
-                  name, default)
-        res = self.tgvs.get(name, default)
-        log.debug("Returning value '%s',", res)
-        return res
-
-    def hasTaggedValue(self, name):
-        return self.tgvs.has_key(name)
 
     def hasAttributeWithTaggedValue(self, tag, value=None):
         """Return True if any attribute has a TGV 'tag'.
 
         If given, also check for a matching value.
         """
+        # XXX nice convinience, but should be moved outside xmiparser
         log.debug("Searching for presence of an attribute with tag '%s'.", tag)
         if value:
             log.debug("But, extra condition, the value should be '%s'.", value)
         attrs = self.getAttributeDefs()
         for attr in attrs:
-            if attr.hasTaggedValue(tag):
+            if tag in self.tgvs:
                 log.debug("Yep, we've found an attribute with that tag.")
                 if not value:
                     # We don't have to have a specific value
                     return True
                 else:
                     # We need a specific value
-                    if attr.getTaggedValue(tag, None) == value:
+                    if attr.tgvs.get(tag, None) == value:
                         return True
                     else:
                         log.debug("But, alas, the value isn't right.")
         log.debug("No, found nothing.")
         return False
-
-    def getTaggedValues(self):
-        return self.tgvs
 
     def getDocumentation(self, striphtml=0, wrap=-1):
         """Return formatted documentation string.
@@ -224,7 +207,7 @@ class XMIElement(object):
     def setName(self, name):
         log.debug("Setting our name to '%s' the hard way. "
                   "The automatic mechanism set it to '%s' already.",
-                  name, self.getName())
+                  name, self.xminame)
         self.__name__ = name
 
     def getAttrs(self):
@@ -273,13 +256,13 @@ class XMIElement(object):
             child.show(outfile, level + 1)
 
     def addOperationDefs(self, m):
-        if m.getName():
+        if m.xminame:
             self.operationDefs.append(m)
 
     def getCleanName(self):
         # If there is a namespace, replace it with an underscore.
-        if self.getName():
-            self.unmappedCleanName = str(self.getName()).translate(clean_trans)
+        if self.xminame:
+            self.unmappedCleanName = str(self.xminame).translate(clean_trans)
         else:
             self.unmappedCleanName = ''
         return mapName(self.unmappedCleanName)
@@ -312,24 +295,24 @@ class XMIElement(object):
         return bool(Set(stereotypes).intersection(Set(self.stereotypes)))
 
     def getFullQualifiedName(self):
-        return self.getName()
+        return self.xminame
 
+    @property
     def acquirePackage(self):
         """Acquires the package to which this object belongs."""
         if self.package is not None:
             return self.package
         if self.getParent():
-            return self.getParent().getPackage()
+            return self.getParent().package
         return None
 
     def getPath(self):
-        return [self.getName()]
+        return [self.xminame]
 
     def getModuleName(self, lower=False):
         """Gets the name of the module the class is in."""
-        basename = self.getCleanName()
-        return self.getTaggedValue('module') or \
-               (lower and basename.lower() or basename)
+        name = self.tgvs.get('module', self.cleanName)
+        return name.lower() if lower else name 
 
     def addClientDependency(self, dep):
         self.clientDependencies.append(dep)
@@ -403,9 +386,9 @@ class StateMachineContainer(object):
         statemachines = self.findStateMachines()
         for m in statemachines:
             sm = XMIStateMachine(m, parent=self)
-            if sm.getName():
+            if sm.xminame:
                 # Determine the correct product where it belongs
-                products = [c.getPackage().getProduct()
+                products = [c.package.getProduct()
                             for c in sm.getClasses()]
                 # Associate the WF with the first product
                 if products:
@@ -413,7 +396,7 @@ class StateMachineContainer(object):
                 else:
                     products = self
                 product.addStateMachine(sm)
-                res[sm.getName()] = sm
+                res[sm.xminame] = sm
         if recursive:
             for p in self.getPackages():
                 res.update(p.buildStateMachines())
@@ -427,7 +410,7 @@ class StateMachineContainer(object):
         if hasattr(self, 'isProduct') and not self.isProduct():
             self.getProduct().addStateMachine(sm, reparent=0)
         if not hasattr(self, 'isProduct'):
-            self.getPackage().getProduct().addStateMachine(sm, reparent=0)
+            self.package.getProduct().addStateMachine(sm, reparent=0)
 
     def getStateMachines(self):
         return self.statemachines
@@ -521,7 +504,7 @@ class XMIPackage(StateMachineContainer, XMIElement):
         ownedElement = self.XMI.getOwnedElement(self.domElement)
         if not ownedElement:
             log.warn("Empty package: '%s'.",
-                     self.getName())
+                     self.xminame)
             return
 
         classes = getElementsByTagName(ownedElement, self.XMI.CLASS) + \
@@ -537,7 +520,7 @@ class XMIPackage(StateMachineContainer, XMIElement):
                     xc = XMIAssociationClass(c, package=self)
             else:
                 xc = XMIClass(c, package=self)
-            if xc.getName():
+            if xc.xminame:
                 self.addClass(xc)
 
         for p in self.getPackages():
@@ -547,14 +530,14 @@ class XMIPackage(StateMachineContainer, XMIElement):
         ownedElement = self.XMI.getOwnedElement(self.domElement)
         if not ownedElement:
             log.warn("Empty package: '%s'.",
-                     self.getName())
+                     self.xminame)
             return
 
         classes = getElementsByTagName(ownedElement, self.XMI.INTERFACE)
 
         for c in classes:
             xc = XMIInterface(c, package=self)
-            if xc.getName():
+            if xc.xminame:
                 self.addInterface(xc)
 
         for p in self.getPackages():
@@ -635,7 +618,7 @@ class XMIPackage(StateMachineContainer, XMIElement):
         path or a relative path if the pack(self) is a subpack of 'ref'.
         """
         path = self.getPath(includeRoot=includeRoot, parent=ref)
-        return ".".join([p.getName() for p in path])
+        return ".".join([p.xminame for p in path])
 
 
 class XMIModel(XMIPackage):
@@ -656,10 +639,10 @@ class XMIModel(XMIPackage):
         self._buildDiagrams()
         self._associateClassesToStateMachines()
         for c in self.getClasses(recursive=1):
-            if c.getName() in ['int', 'void', 'string'] and not \
+            if c.xminame in ['int', 'void', 'string'] and not \
                c.hasStereotype(self.XMI.generate_datatypes) and c.isEmpty():
                 c.internalOnly = 1
-                log.debug("Internal class (not generated): '%s'.", c.getName())
+                log.debug("Internal class (not generated): '%s'.", c.xminame)
         self.XMI.buildRelations(doc, allObjects)
         self.XMI.buildGeneralizations(doc, allObjects)
         self.XMI.buildRealizations(doc, allObjects)
@@ -692,16 +675,17 @@ class XMIModel(XMIPackage):
         sms = self.getAllStateMachines()
         smdict = {}
         for sm in sms:
-            smdict[sm.getName()] = sm
+            smdict[sm.xminame] = sm
 
         for cl in self.getClasses(recursive=1):
-            uf = cl.getTaggedValue('use_workflow')
-            if uf:
-                wf = smdict.get(uf)
-                if not wf:
-                    log.debug('associated workflow does not exist: %s' % uf)
-                    continue
-                smdict[uf].addClass(cl)
+            uf = cl.tgvs.get('use_workflow')
+            if uf is None:
+                continue
+            wf = smdict.get(uf)
+            if not wf:
+                log.debug('associated workflow does not exist: %s' % uf)
+                continue
+            smdict[uf].addClass(cl)
 
 
 class XMIClass(XMIElement, StateMachineContainer):
@@ -717,7 +701,7 @@ class XMIClass(XMIElement, StateMachineContainer):
         # ugh, setPackage(). Handle this with some more generic zope3
         # parent() relation. [reinout]
         self.setPackage(kw.get('package', None))
-        log.debug("Package set to '%s'.", self.package.getName())
+        log.debug("Package set to '%s'.", self.package.xminame)
         log.debug("Running Parents's init...")
         super(XMIClass, self).__init__(*args, **kw)
         self.assocsTo = []
@@ -766,7 +750,7 @@ class XMIClass(XMIElement, StateMachineContainer):
         self.genParents.append(c)
 
     def getAttributeNames(self):
-        return [a.getName() for a in self.getAttributeDefs()]
+        return [a.xminame for a in self.getAttributeDefs()]
 
     def hasAttribute(self, a):
         return a in self.getAttributeNames()
@@ -785,7 +769,7 @@ class XMIClass(XMIElement, StateMachineContainer):
 
     def getGenChildrenNames(self, recursive=0):
         """Returns the names of the generalization children."""
-        return [o.getName() for o in self.getGenChildren(recursive=recursive)]
+        return [o.xminame for o in self.getGenChildren(recursive=recursive)]
 
     def getGenParents(self, recursive = 0):
         """Returns generalization parents."""
@@ -882,7 +866,7 @@ class XMIClass(XMIElement, StateMachineContainer):
         UML, a composition is a filled rhomb. (Dutch: 'wybertje').
         """
 
-        log.debug("Trying to figure out if the '%s' class is dependent.", self.getName())
+        log.debug("Trying to figure out if the '%s' class is dependent.", self.xminame)
         aggs = self.getToAssociations(aggtypes=['aggregate']) or self.getFromAssociations(aggtypesTo=['aggregate'])
         log.debug("Found aggregations that contain us: %r.", aggs)
         comps = self.getToAssociations(aggtypes=['composite']) or self.getFromAssociations(aggtypesTo=['composite'])
@@ -911,7 +895,7 @@ class XMIClass(XMIElement, StateMachineContainer):
 
     def getSubtypeNames(self, recursive=0, **kw):
         """Returns the non-intrinsic subtypes names."""
-        res = [o.getName() for o in
+        res = [o.xminame for o in
                self.getAggregatedClasses(recursive=recursive, **kw)]
         return res
 
@@ -933,7 +917,7 @@ class XMIClass(XMIElement, StateMachineContainer):
     getParent = getPackage
 
     def getRootPackage(self):
-        return self.getPackage().getRootPackage()
+        return self.package.getRootPackage()
 
     def isInterface(self):
         return self.isinterface or 'interface' in self.stereotypes
@@ -968,7 +952,7 @@ class XMIClass(XMIElement, StateMachineContainer):
 
     def getRealizationChildrenNames(self, recursive=0):
         """Returns the names of the realization children."""
-        return [o.getName() for o in
+        return [o.xminame for o in
                 self.getRealizationChildren(recursive=recursive)]
 
     def getRealizationParents(self):
@@ -995,7 +979,7 @@ class XMIClass(XMIElement, StateMachineContainer):
 
     def getAdaptationParentNames(self, recursive=0):
         """Returns the names of the adapters of this element."""
-        return [o.getName() for o in
+        return [o.xminame for o in
                 self.getAdaptationParents(recursive=recursive)]
 
     def getAdaptationChildren(self):
@@ -1012,7 +996,7 @@ class XMIClass(XMIElement, StateMachineContainer):
         path or a relative path if the pack(self) is a subpack of 'ref'
         if it belongs to a different root package it even needs a 'Products.'
         """
-        package = self.getPackage()
+        package = self.package
         if package == ref:
             path = package.getPath(includeRoot=includeRoot, parent=ref)
         else:
@@ -1023,7 +1007,7 @@ class XMIClass(XMIElement, StateMachineContainer):
             else:
                 path = package.getPath(includeRoot=includeRoot, parent=ref)
 
-        if not self.getPackage().hasStereotype('module'):
+        if not self.package.hasStereotype('module'):
             path.append(self)
 
         return path
@@ -1083,9 +1067,9 @@ class XMIMethodParameter(XMIElement):
         default is defined.
         """
         if self.getDefault():
-            return "%s=%s" % (self.getName(), self.getDefault())
+            return "%s=%s" % (self.xminame, self.getDefault())
         else:
-            return self.getName()
+            return self.xminame
 
 class XMIMethod (XMIElement):
     params = []
@@ -1114,7 +1098,7 @@ class XMIMethod (XMIElement):
         return self.params
 
     def getParamNames(self):
-        return [p.getName() for p in self.params]
+        return [p.xminame for p in self.params]
 
     def getParamExpressions(self):
         """Rturns the param names or paramname=default for each
@@ -1123,7 +1107,7 @@ class XMIMethod (XMIElement):
         return [p.getExpression() for p in self.params]
 
     def addParameter(self, p):
-        if p.getName() != 'return':
+        if p.xminame != 'return':
             self.params.append(p)
 
     def testmethodName(self):
@@ -1187,13 +1171,13 @@ class XMIAttribute (XMIElement):
 
 class XMIAssocEnd (XMIElement):
 
-    def getName(self,ignore_cardinality=0):
+    def associationEndName(self, ignore_cardinality=0):
         name = str(self.__name__)
         if name:
             return name
         else:
             if self.getTarget():
-                res=self.getTarget().getName().lower()
+                res=self.getTarget().xminame.lower()
                 if self.getUpperBound != 1 and not ignore_cardinality:
                     res+='s'
                 return res
@@ -1237,22 +1221,23 @@ class XMIAssociation (XMIElement):
     fromEnd = None
     toEnd = None
 
-    def getName(self):
-        log.debug("Getting name for association...")
+    @property
+    def xminame(self):
+        log.debug("Getting xminame for association...")
         name = str(self.__name__)
         if self.__name__:
             log.debug("self.__name__ is set to '%s', returning it.", name)
             return name
         log.debug("self.__name__ isn't set.")
         if self.fromEnd:
-            fromname = self.fromEnd.getName(ignore_cardinality=1)
+            fromname = self.fromEnd.associationEndName(True)
             log.debug("Getting fromname from the startpoint: '%s'.",
                       fromname)
         else:
             fromname = self.id
             log.debug("Getting fromname from our id: '%s'.", fromname)
         if self.toEnd:
-            toname = self.toEnd.getName(ignore_cardinality=1)
+            toname = self.toEnd.associationEndName(True)
             log.debug("Getting toname from the endpoint: '%s'.", toname)
         else:
             toname = self.id
@@ -1267,31 +1252,30 @@ class XMIAssociation (XMIElement):
 
     def getInverseName(self):
         log.debug("Getting name for association...")
-        name = self.getTaggedValue('inverse_relation_name',None)
-        if name:
+        name = self.tgvs.get('inverse_relation_name')
+        if name is not None:
             log.debug("self.inverse_name is set to '%s', returning it.", name)
-            res = name
+            return name
+        log.debug("self.inverse_name isn't set.")
+        if self.fromEnd:
+            fromname = self.fromEnd.associationEndName(True)
+            log.debug("Getting fromname from the startpoint: '%s'.",
+                      fromname)
         else:
-            log.debug("self.inverse_name isn't set.")
-            if self.fromEnd:
-                fromname = self.fromEnd.getName(ignore_cardinality=1)
-                log.debug("Getting fromname from the startpoint: '%s'.",
-                          fromname)
-            else:
-                fromname = self.id
-                log.debug("Getting fromname from our id: '%s'.", fromname)
-            if self.toEnd:
-                toname = self.toEnd.getName(ignore_cardinality=1)
-                log.debug("Getting toname from the endpoint: '%s'.", toname)
-            else:
-                toname = self.id
-                log.debug("Getting toname from our id: '%s'.", toname)
-            res = '%s_%s' % (toname, fromname)
-            log.debug("Combining that fromname and toname to form our "
-                      "relation name: '%s'.", res)
-            if isinstance(res, basestring):
-                res = res.strip().lower()
-                log.debug("Making it lowercase for good measure: '%s'.", res)
+            fromname = self.id
+            log.debug("Getting fromname from our id: '%s'.", fromname)
+        if self.toEnd:
+            toname = self.toEnd.associationEndName(True)
+            log.debug("Getting toname from the endpoint: '%s'.", toname)
+        else:
+            toname = self.id
+            log.debug("Getting toname from our id: '%s'.", toname)
+        res = '%s_%s' % (toname, fromname)
+        log.debug("Combining that fromname and toname to form our "
+                  "relation name: '%s'.", res)
+        if isinstance(res, basestring):
+            res = res.strip().lower()
+            log.debug("Making it lowercase for good measure: '%s'.", res)
         return res
 
     def _initFromDOM(self):
@@ -1375,7 +1359,7 @@ class XMIStateMachine(XMIElement):
             if no_duplicates:
                 flag_exists = 0
                 for r in ret:
-                    if s.getName() == r.getName():
+                    if s.xminame == r.xminame:
                         flag_exists = 1
                         break
                 if flag_exists:
@@ -1384,12 +1368,12 @@ class XMIStateMachine(XMIElement):
         return ret
 
     def getStateNames(self, no_duplicates=None):
-        return [s.getName() for s in
-                self.getStates(no_duplicates=no_duplicates) if s.getName()]
+        return [s.xminame for s in
+                self.getStates(no_duplicates=no_duplicates) if s.xminame]
 
     def getCleanStateNames(self, no_duplicates=None):
         return [s.getCleanName() for s in
-                self.getStates(no_duplicates=no_duplicates) if s.getName()]
+                self.getStates(no_duplicates=no_duplicates) if s.xminame]
 
 
     def _associateClasses(self):
@@ -1427,9 +1411,9 @@ class XMIStateMachine(XMIElement):
         return [tran[tname] for tname in tran]
 
     def getTransitionNames(self, no_duplicates=None):
-        return [t.getName() for t in
+        return [t.xminame for t in
                 self.getTransitions(no_duplicates=no_duplicates)
-                if t.getName()]
+                if t.xminame]
 
     def _buildStates(self):
         log.debug("Building states...")
@@ -1468,22 +1452,21 @@ class XMIStateMachine(XMIElement):
         return self.classes
 
     def getClassNames(self):
-        return [cl.getName() for cl in self.getClasses()]
+        return [cl.xminame for cl in self.getClasses()]
 
     def addClass(self, cl):
         self.classes.append(cl)
         cl.setStateMachine(self)
 
-    def getInitialState(self):
+    def getInitialState(self, use_tgv='initial_state'):
         states = self.getStates()
-        for s in states:
-            if s.isInitial():
-                return s
-        for s in states:
-            for k, v in s.getTaggedValues().items():
-                # XXX eeek, this is very specific and need to move to generator
-                if k == 'initial_state':
-                    return s
+        for state in states:
+            if state.isInitial():
+                return state
+        for state in states:
+            for key, value in state.tgvs.items():
+                if key == use_tgv:
+                    return state
         return states[0]
 
     def getAllTransitionActions(self):
@@ -1547,7 +1530,7 @@ class XMIStateTransition(XMIElement):
 
     def getSourceStateName(self):
         if self.getSourceState():
-            return self.getSourceState().getName()
+            return self.getSourceState().xminame
         else:
             return None
 
@@ -1559,7 +1542,7 @@ class XMIStateTransition(XMIElement):
 
     def getTargetStateName(self):
         if self.getTargetState():
-            return self.getTargetState().getName()
+            return self.getTargetState().xminame
         else:
             return None
 
@@ -1568,7 +1551,7 @@ class XMIStateTransition(XMIElement):
 
     def getActionName(self):
         if self.action:
-            return self.action.getName()
+            return self.action.xminame
 
     def getBeforeActionName(self):
         if self.action:
@@ -1637,7 +1620,7 @@ class XMIStateTransition(XMIElement):
             'workflow method': 'WORKFLOWMETHOD',
             }
         default = 'user action'
-        trigger_type = self.getTaggedValue('trigger_type', default)
+        trigger_type = self.tgvs.get('trigger_type', default)
         trigger_type = trigger_types.get(trigger_type, trigger_type)
         return trigger_type
 
@@ -1657,7 +1640,7 @@ class XMIAction(XMIElement):
         """When the name contains a semicolon the name specifies two actions:
         the one before the transition and the one after the transition.
         """
-        res = self.getName().split(';')
+        res = self.xminame.split(';')
         if len(res) == 1 and padding:
             return ['', res[0]]
         else:
@@ -1741,9 +1724,6 @@ class XMIState(XMIElement):
     def getOutgoingTransitions(self):
         return self.outgoingTransitions
 
-    def getTaggedValues(self):
-        return self.tgvs
-
     def isInitial(self):
         return self.isinitial
 
@@ -1752,20 +1732,20 @@ class XMIState(XMIElement):
 
         It looks the description at the TGV 'description'.
         """
-        return self.getTaggedValue('description', '')
+        return self.tgvs.get('description', '')
 
     def getTitle(self, striphtml=0):
         """ Return the title for a state
 
         The original is in the templates/create_workflow.py:
-        <dtml-var "_['sequence-item'].getDocumentation(striphtml=generator.atgenerator.striphtml) or _['sequence-item'].getName()">
+        <dtml-var "_['sequence-item'].getDocumentation(striphtml=generator.atgenerator.striphtml) or _['sequence-item'].xminame">
 
         This method mimics that, but also looks at the TGV 'label'
         """
         # XXX this is generator specific!! move it away from in xmiparser
         fromDocumentation = self.getDocumentation(striphtml=striphtml)
-        fromTaggedValue = self.getTaggedValue('label', None)
-        default = self.getName()
+        fromTaggedValue = self.tgvs.get('label')
+        default = self.xminame
         return fromTaggedValue or fromDocumentation or default
 
 class XMICompositeState(XMIState):
@@ -1804,7 +1784,7 @@ class XMIDiagram(XMIElement):
 
         # Workaround for the Poseidon problem
         if issubclass(self.modelElement.__class__, XMIStateMachine):
-            self.modelElement.setName(self.getName())
+            self.modelElement.setName(self.xminame)
 
     def getModelElementId(self):
         if self.modelElement:
