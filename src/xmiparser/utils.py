@@ -19,6 +19,8 @@ specialrpl = {
     # add more for other language here
 }
 
+clean_trans = string.maketrans(':-. /$', '______')
+
 def mapName(oldName):
     return oldName.replace('-', '_')
 

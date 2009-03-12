@@ -12,21 +12,16 @@ from xmiparser.utils import mapName
 from xmiparser.utils import toBoolean
 from xmiparser.utils import normalize
 from xmiparser.utils import wrap as doWrap
+from xmiparser.utils import clean_trans
 from xmiparser.xmiutils import getElementByTagName
 from xmiparser.xmiutils import getElementsByTagName
-from xmiparser.interfaces import IPackage
-from xmiparser.interfaces import IModel
+from xmiparser.interfaces import IXMIElement
+from xmiparser.interfaces import IXMIPackage
+from xmiparser.interfaces import IXMIModel
 
 log = logging.getLogger('XMIparser')
 
-# Set default wrap width
-default_wrap_width = 64
-
-# Tag constants
-clean_trans = string.maketrans(':-. /$', '______')
-
-
-allObjects = {}
+allObjects = {} # XXX i dont like this concept of a global dict (jensens)
 
 class PseudoElement(object):
     # urgh, needed to pretend a class
@@ -41,32 +36,31 @@ class PseudoElement(object):
         return self.getName()
 
 class XMIElement(object):
+    
+    implements(IXMIElement)
 
     __parent__ = None
     __name__ = None
-    package = None
     __XMI__ = None
+        
+    package = None
 
     def __init__(self, parent, domElement=None, name='', *args, **kwargs):
         self.domElement = domElement
         self.__name__ = name
         self.__parent__ = parent
+        self.id = ''
         self.cleanName = ''
-        self.atts = {}
         self.children = []
         self.maxOccurs = 1
         self.complex = 0
         self.type = 'NoneType'
-        self.attributeDefs = []
-        self.methodDefs = []
-        self.id = ''
-        self.taggedValues = odict()
         self.subTypes = []
-        self.stereoTypes = []
+        self.attributeDefs = []
+        self.operationDefs = []
+        self.tgvs = odict()
+        self.stereotypes = []
         self.clientDependencies = []
-        # Space to store values by external access. Use annotate() to
-        # store values in this dict, and getAnnotation() to fetch it.
-        self.annotations = {}
         # Take kwargs as attributes
         self.__dict__.update(kwargs)
         if domElement:
@@ -86,9 +80,6 @@ class XMIElement(object):
             return self.__parent__.__XMI__
         raise AttributeError, 'No XMI flavor given' 
 
-    def getId(self):
-        return self.id
-
     def getParent(self):
         return self.__parent__
 
@@ -106,20 +97,17 @@ class XMIElement(object):
             try:
                 tagname, tagvalue = self.XMI.getTaggedValue(tgv)
                 log.debug("Found tag '%s' with value '%s'.", tagname, tagvalue)
-                if self.taggedValues.has_key(tagname):
+                if self.tgvs.has_key(tagname):
                     log.debug("Invoking Poseidon multiline fix for "
                               "tagname '%s'.", tagname)
-                    self.taggedValues[tagname] += '\n'+tagvalue
+                    self.tgvs[tagname] += '\n'+tagvalue
                 else:
-                    self.taggedValues[tagname] = tagvalue
+                    self.tgvs[tagname] = tagvalue
             except TypeError, e:
                 log.warn("Broken tagged value in id '%s'.",
                          self.XMI.getId(self.domElement))
         log.debug("Found the following tagged values: %r.",
                   self.getTaggedValues())
-
-    def setTaggedValue(self, k, v):
-        self.taggedValues[k] = v
 
     def _initFromDOM(self):
         domElement = self.domElement
@@ -131,7 +119,7 @@ class XMIElement(object):
         log.debug("Initializing from DOM: name='%s', id='%s'.",
                   self.__name__, self.id)
         self._parseTaggedValues()
-        self._calculateStereoType()
+        self._calculateStereotype()
         mult = getElementByTagName(domElement, self.XMI.MULTIPLICITY, None)
         if mult:
             maxNodes = mult.getElementsByTagName(self.XMI.MULT_MAX)
@@ -144,14 +132,8 @@ class XMIElement(object):
         domElement.xmiElement = self
         self._buildChildren(domElement)
 
-    def addChild(self, element):
-        self.children.append(element)
-
     def addSubType(self, st):
         self.subTypes.append(st)
-
-    def getChildren(self):
-        return self.children
 
     def getName(self, doReplace=False):
         if self.__name__:
@@ -168,12 +150,12 @@ class XMIElement(object):
         log.debug("Getting value for tag '%s' (default=%s). "
                   "Note: we're not doing this recursively.",
                   name, default)
-        res = self.taggedValues.get(name, default)
+        res = self.tgvs.get(name, default)
         log.debug("Returning value '%s',", res)
         return res
 
     def hasTaggedValue(self, name):
-        return self.taggedValues.has_key(name)
+        return self.tgvs.has_key(name)
 
     def hasAttributeWithTaggedValue(self, tag, value=None):
         """Return True if any attribute has a TGV 'tag'.
@@ -200,7 +182,7 @@ class XMIElement(object):
         return False
 
     def getTaggedValues(self):
-        return self.taggedValues
+        return self.tgvs
 
     def getDocumentation(self, striphtml=0, wrap=-1):
         """Return formatted documentation string.
@@ -227,7 +209,7 @@ class XMIElement(object):
                       "Returning empty string.")
             return ''
         if wrap == -1:
-            wrap = default_wrap_width
+            wrap = 64
         doc = html2text(doc, (), 0, 1000000).strip()
         if wrap:
             log.debug("Wrapping the documenation.")
@@ -271,7 +253,7 @@ class XMIElement(object):
 
     def getRefs(self):
         """Returns all referenced schema names."""
-        return [str(c.getRef()) for c in self.getChildren() if c.getRef()]
+        return [str(c.getRef()) for c in self.children if c.getRef()]
 
     def show(self, outfile, level):
         showLevel(outfile, level)
@@ -287,12 +269,12 @@ class XMIElement(object):
             showLevel(outfile, level + 1)
             outfile.write('key: %s  value: %s\n' % \
                 (key, self.attributeDefs[key]))
-        for child in self.getChildren():
+        for child in self.children:
             child.show(outfile, level + 1)
 
-    def addMethodDefs(self, m):
+    def addOperationDefs(self, m):
         if m.getName():
-            self.methodDefs.append(m)
+            self.operationDefs.append(m)
 
     def getCleanName(self):
         # If there is a namespace, replace it with an underscore.
@@ -308,60 +290,32 @@ class XMIElement(object):
     def _buildChildren(self, domElement):
         pass
 
-    def getMethodDefs(self, recursive=0):
+    def getOperationDefs(self, recursive=0):
         log.debug("Getting method definitions (recursive=%s)...", recursive)
-        res = [m for m in self.methodDefs]
+        res = [m for m in self.operationDefs]
         log.debug("Our own methods: %r.", res)
         if recursive:
             log.debug("Also looking recursively to our parents...")
             parents = self.getGenParents(recursive=1)
             for p in parents:
-                res.extend(p.getMethodDefs())
+                res.extend(p.getOperationDefs())
             log.debug("Our total methods: %r.", res)
         return res
 
-    def _calculateStereoType(self):
-        return self.XMI.calculateStereoType(self)
+    def _calculateStereotype(self):
+        return self.XMI.calculateStereotype(self)
 
-    def setStereoType(self, st):
-        self.stereoTypes = [st]
-
-    def getStereoType(self):
-        if self.stereoTypes:
-            return self.stereoTypes[0]
-        else:
-            return None
-
-    def addStereoType(self, st):
-        log.debug("Adding stereotype '%s' to this element's internal list.", st)
-        self.stereoTypes.append(st)
-
-    def getStereoTypes(self):
-        return self.stereoTypes
-
-    def hasStereoType(self, stereotypes, umlprofile=None):
+    def hasStereotype(self, stereotypes):
         log.debug("Looking if element has stereotype %r", stereotypes)
         if isinstance(stereotypes, (str, unicode)):
             stereotypes = [stereotypes]
-        if umlprofile:
-            for stereotype in stereotypes:
-                found = umlprofile.findStereoTypes(entities=[self.classcategory])
-                if found:
-                    log.debug("Stereotype '%s' is registered.",
-                              stereotype)
-                else:
-                    log.warn("DEVELOPERS: Stereotype '%s' isn't registered "
-                             "for element '%s'.", stereotype, self.classcategory)
-        for stereotype in stereotypes:
-            if stereotype in self.getStereoTypes():
-                return True
-        return False
+        return bool(Set(stereotypes).intersection(Set(self.stereotypes)))
 
     def getFullQualifiedName(self):
         return self.getName()
 
-    def getPackage(self):
-        """Returns the package to which this object belongs."""
+    def acquirePackage(self):
+        """Acquires the package to which this object belongs."""
         if self.package is not None:
             return self.package
         if self.getParent():
@@ -377,12 +331,6 @@ class XMIElement(object):
         return self.getTaggedValue('module') or \
                (lower and basename.lower() or basename)
 
-    def annotate(self, key, value):
-        self.annotations[key] = value
-
-    def getAnnotation(self, name, default=[]):
-        return self.annotations.get(name, default)
-
     def addClientDependency(self, dep):
         self.clientDependencies.append(dep)
 
@@ -396,7 +344,7 @@ class XMIElement(object):
                 res.extend(o.getClientDependencies(includeParents=includeParents))
                 res.reverse()
         if dependencyStereotypes:
-            res = [r for r in res if r.hasStereoType(dependencyStereotypes)]
+            res = [r for r in res if r.hasStereotype(dependencyStereotypes)]
         return res
 
     def getClientDependencyClasses(self, includeParents=False,
@@ -411,7 +359,7 @@ class XMIElement(object):
                   in ('XMIClass', 'XMIInterface')]
 
         if targetStereotypes:
-            res = [r for r in res if r.hasStereoType(targetStereotypes)]
+            res = [r for r in res if r.hasStereotype(targetStereotypes)]
 
         return res
 
@@ -505,6 +453,9 @@ class XMIPackage(StateMachineContainer, XMIElement):
         self._buildStateMachines()
         self._buildInterfaces()
         self._buildClasses()
+        self.children += self.getClasses()
+        self.children += self.getPackages()
+        self.children += self.getInterfaces()
 
 
     def getClasses(self, recursive=0, ignoreInternals=True):
@@ -543,10 +494,6 @@ class XMIPackage(StateMachineContainer, XMIElement):
     def getClassesAndInterfaces(self, recursive=0):
         return self.getClasses(recursive=recursive) + \
                self.getInterfaces(recursive=recursive)
-
-    def getChildren(self):
-        return self.children + self.getClasses() + \
-               self.getPackages() + self.getInterfaces()
 
     def addPackage(self, p):
         self.packages.append(p)
@@ -615,7 +562,7 @@ class XMIPackage(StateMachineContainer, XMIElement):
 
     def isRoot(self):
         # TBD Handle this through the stereotype registry
-        return self.isroot or self.hasStereoType(['product', 'zopeproduct',
+        return self.isroot or self.hasStereotype(['product', 'zopeproduct',
                                                   'Product', 'ZopeProduct'])
 
     isProduct = isRoot
@@ -710,7 +657,7 @@ class XMIModel(XMIPackage):
         self._associateClassesToStateMachines()
         for c in self.getClasses(recursive=1):
             if c.getName() in ['int', 'void', 'string'] and not \
-               c.hasStereoType(self.XMI.generate_datatypes) and c.isEmpty():
+               c.hasStereotype(self.XMI.generate_datatypes) and c.isEmpty():
                 c.internalOnly = 1
                 log.debug("Internal class (not generated): '%s'.", c.getName())
         self.XMI.buildRelations(doc, allObjects)
@@ -731,7 +678,7 @@ class XMIModel(XMIPackage):
         diagram_els = getElementsByTagName(self.content, self.XMI.DIAGRAM)
         for el in diagram_els:
             diagram = XMIDiagram(self, el)
-            self.diagrams[diagram.getId()] = diagram
+            self.diagrams[diagram.id] = diagram
             self.diagramsByModel[diagram.getModelElementId()] = diagram
 
     def getAllStateMachines(self):
@@ -798,7 +745,7 @@ class XMIClass(XMIElement, StateMachineContainer):
         return self.internalOnly
 
     def isEmpty(self):
-        return not self.getMethodDefs() and \
+        return not self.getOperationDefs() and \
             not self.getAttributeDefs() and \
             not self.assocsTo and \
             not self.assocsFrom and \
@@ -860,7 +807,7 @@ class XMIClass(XMIElement, StateMachineContainer):
         for el in domElement.getElementsByTagName(XMI.METHOD):
             meth = XMIMethod(parent, el)
             meth.setParent(self)
-            self.addMethodDefs(meth)
+            self.addOperationDefs(meth)
 
 # XXX: this is stuff for the generator!
 #        if self.XMI.getGenerationOption('default_field_generation'):
@@ -979,14 +926,6 @@ class XMIClass(XMIElement, StateMachineContainer):
                ['xmi'+f.lower() for f in filter]]
         return res
 
-    def isI18N(self):
-        """If at least one method is I18N the class has to be
-        treated as I18N.
-        """
-        for a in self.getAttributeDefs():
-            if a.isI18N():
-                return True
-        return False
 
     def getPackage(self):
         return self.package
@@ -997,7 +936,7 @@ class XMIClass(XMIElement, StateMachineContainer):
         return self.getPackage().getRootPackage()
 
     def isInterface(self):
-        return self.isinterface or self.getStereoType() == 'interface'
+        return self.isinterface or 'interface' in self.stereotypes
 
     def addRealizationChild(self, c):
         self.realizationChildren.append(c)
@@ -1084,7 +1023,7 @@ class XMIClass(XMIElement, StateMachineContainer):
             else:
                 path = package.getPath(includeRoot=includeRoot, parent=ref)
 
-        if not self.getPackage().hasStereoType('module'):
+        if not self.getPackage().hasStereotype('module'):
             path.append(self)
 
         return path
@@ -1259,7 +1198,7 @@ class XMIAssocEnd (XMIElement):
                     res+='s'
                 return res
             else:
-                return self.getId()
+                return self.id
 
     def _initFromDOM(self):
         super(XMIAssocEnd, self)._initFromDOM()
@@ -1275,7 +1214,7 @@ class XMIAssocEnd (XMIElement):
             self.aggregation = self.XMI.getAssocEndAggregation(el)
         else:
             log.debug("Association end missing for association end: '%s'.",
-                      self.getId())
+                      self.id)
 
     def getTarget(self):
         return self.obj
@@ -1310,13 +1249,13 @@ class XMIAssociation (XMIElement):
             log.debug("Getting fromname from the startpoint: '%s'.",
                       fromname)
         else:
-            fromname = self.getId()
+            fromname = self.id
             log.debug("Getting fromname from our id: '%s'.", fromname)
         if self.toEnd:
             toname = self.toEnd.getName(ignore_cardinality=1)
             log.debug("Getting toname from the endpoint: '%s'.", toname)
         else:
-            toname = self.getId()
+            toname = self.id
             log.debug("Getting toname from our id: '%s'.", toname)
         res = '%s_%s' % (fromname, toname)
         log.debug("Combining that fromname and toname to form our "
@@ -1339,13 +1278,13 @@ class XMIAssociation (XMIElement):
                 log.debug("Getting fromname from the startpoint: '%s'.",
                           fromname)
             else:
-                fromname = self.getId()
+                fromname = self.id
                 log.debug("Getting fromname from our id: '%s'.", fromname)
             if self.toEnd:
                 toname = self.toEnd.getName(ignore_cardinality=1)
                 log.debug("Getting toname from the endpoint: '%s'.", toname)
             else:
-                toname = self.getId()
+                toname = self.id
                 log.debug("Getting toname from our id: '%s'.", toname)
             res = '%s_%s' % (toname, fromname)
             log.debug("Combining that fromname and toname to form our "
@@ -1418,7 +1357,7 @@ class XMIStateMachine(XMIElement):
         self.classes = []
         super(XMIStateMachine, self).__init__(*args, **kwargs)
         self.setParent(kwargs.get('parent', None))
-        log.debug("Created statemachine '%s'.", self.getId())
+        log.debug("Created statemachine '%s'.", self.id)
 
     def _initFromDOM(self):
         super(XMIStateMachine, self)._initFromDOM()
@@ -1482,7 +1421,7 @@ class XMIStateMachine(XMIElement):
                           t.getCleanName(), t.getProps())
                 continue
             for tname in tran:
-                if t.getCleanName() == tname and t.hasStereoType('primary'):
+                if t.getCleanName() == tname and t.hasStereotype('primary'):
                     tran.update({tname:t})
 
         return [tran[tname] for tname in tran]
@@ -1803,7 +1742,7 @@ class XMIState(XMIElement):
         return self.outgoingTransitions
 
     def getTaggedValues(self):
-        return self.taggedValues
+        return self.tgvs
 
     def isInitial(self):
         return self.isinitial
@@ -1869,7 +1808,7 @@ class XMIDiagram(XMIElement):
 
     def getModelElementId(self):
         if self.modelElement:
-            return self.modelElement.getId()
+            return self.modelElement.id
 
     def getModelElement(self):
         return self.modelElement
