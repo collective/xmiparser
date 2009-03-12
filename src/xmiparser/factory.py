@@ -136,6 +136,3 @@ class ModelFactory(object):
             stereotypes[getId(st)] = st
         return stereotypes
     
-    def _buildHierarchy(self, doc, profile_docs=None):
-        """Builds Hierarchy out of the doc."""
-        

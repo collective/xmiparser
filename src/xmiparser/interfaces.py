@@ -64,10 +64,10 @@ class IXMIElement(IAttributeAnnotatable, ILocation):
     
     
 
-class IPackage(IXMIElement):
+class IXMIPackage(IXMIElement):
     """An XMI Package.
     """
     
-class IModel(IPackage):
+class IXMIModel(IXMIPackage):
     """An XMI Model.
     """

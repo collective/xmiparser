@@ -1,7 +1,6 @@
 # Copyright 2003-2009, BlueDynamics Alliance - http://bluedynamics.com
 # GNU General Public License Version 2 or later
 
-import string
 import os.path
 import logging
 from sets import Set
@@ -401,7 +400,7 @@ class StateMachineContainer(object):
 
 class XMIPackage(StateMachineContainer, XMIElement):
     
-    implements(IPackage)
+    implements(IXMIPackage)
 
     project = None
     isroot = 0
@@ -605,7 +604,9 @@ class XMIPackage(StateMachineContainer, XMIElement):
 
 
 class XMIModel(XMIPackage):
-    implements(IModel)
+    
+    implements(IXMIModel)
+
     isroot = 1
     parent = None
     diagrams = {}

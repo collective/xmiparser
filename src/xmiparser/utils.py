@@ -4,6 +4,7 @@
 # GNU General Public License Version 2 or later
 
 import logging
+import string
 import types
 import logging
 log = logging.getLogger('utils')
