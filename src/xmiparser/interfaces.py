@@ -34,7 +34,7 @@ class IXMIElement(IAttributeAnnotatable, ILocation):
     
     annotations = Attribute(u"The annotations of this element")
 
-class IPackage(IElement):
+class IPackage(IXMIElement):
     """An XMI Package.
     """
     
