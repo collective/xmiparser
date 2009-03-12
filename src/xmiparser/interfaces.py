@@ -42,7 +42,7 @@ class IXMIElement(IAttributeAnnotatable, ILocation):
 
     maxOccurs = Attribute(u"UML: maximum occurencies. integer expected.")
     
-    complex = Attribute(u"UML: complex or not. boolean expected")
+    isComplex = Attribute(u"UML: complex or not. boolean expected")
     
     type = Attribute(u"UML/XMI: ???") # XXX which type? needs research
     

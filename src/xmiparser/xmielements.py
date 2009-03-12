@@ -51,7 +51,7 @@ class XMIElement(object):
         self.cleanName = ''
         self.children = []
         self.maxOccurs = 1
-        self.complex = 0
+        self.isComplex = False
         self.type = 'NoneType'
         self.subTypes = []
         self.attributeDefs = []
@@ -204,24 +204,6 @@ class XMIElement(object):
     def getUnmappedCleanName(self):
         return self.unmappedCleanName
 
-    def setName(self, name):
-        log.debug("Setting our name to '%s' the hard way. "
-                  "The automatic mechanism set it to '%s' already.",
-                  name, self.xminame)
-        self.__name__ = name
-
-    def getAttrs(self):
-        return self.attrs
-
-    def getMaxOccurs(self):
-        return self.maxOccurs
-
-    def getType(self):
-        return self.type
-
-    def isComplex(self):
-        return self.complex
-
     def addAttributeDef(self, attrs, pos=None):
         if pos is None:
             self.attributeDefs.append(attrs)
@@ -243,7 +225,7 @@ class XMIElement(object):
         outfile.write('Name: %s  Type: %s\n' % (self.__name__, self.type))
         showLevel(outfile, level)
         outfile.write('  - Complex: %d  MaxOccurs: %d\n' % \
-            (self.complex, self.maxOccurs))
+            (self.isComplex, self.maxOccurs))
         showLevel(outfile, level)
         outfile.write('  - Attrs: %s\n' % self.attrs)
         showLevel(outfile, level)
@@ -267,8 +249,9 @@ class XMIElement(object):
             self.unmappedCleanName = ''
         return mapName(self.unmappedCleanName)
 
+    @property
     def isIntrinsicType(self):
-        return str(self.getType()).startswith('xs:')
+        return str(self.type).startswith('xs:')
 
     def _buildChildren(self, domElement):
         pass
@@ -724,6 +707,7 @@ class XMIClass(XMIElement, StateMachineContainer):
         self.XMI.calcVisibility(self)
         self.XMI.calcOwnerScope(self)
         self.buildStateMachines(recursive=0)
+        self.isComplex = True
 
     def isInternal(self):
         return self.internalOnly
@@ -820,9 +804,6 @@ class XMIClass(XMIElement, StateMachineContainer):
 #                id.setTaggedValue('widget:i18n_domain', "plone")
 #                id.setTaggedValue('widget:description_msgid', "help_short_name")
 #                self.addAttributeDef(id, 0)
-
-    def isComplex(self):
-        return True
 
     def addAssocFrom(self, a):
         """Adds association originating FROM this class."""
@@ -1784,7 +1765,7 @@ class XMIDiagram(XMIElement):
 
         # Workaround for the Poseidon problem
         if issubclass(self.modelElement.__class__, XMIStateMachine):
-            self.modelElement.setName(self.xminame)
+            self.modelElement.__name__ = self.xminame
 
     def getModelElementId(self):
         if self.modelElement:
