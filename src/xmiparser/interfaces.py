@@ -23,7 +23,7 @@ class IModelFactory(Interface):
         """
 
 class IDataAcquirer(IReadMapping):
-    """Interface for acquiring data from ``.interfaces.IXMIElement``
+    """Interface for acquiring data from ``zope.location.interfaces.ILocation``
     implementing objects.
     
     The implementation are supposed to acquire informations like:
