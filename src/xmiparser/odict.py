@@ -5,9 +5,16 @@
 # http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/107747
 # which has the same license as Python (i.e. GPL compatible)
 
+# XXX
+# This code might have bugs, note that the implementation in the
+# cookbook looks very different now. Maybe we should use another 
+# implementation? (moldy)
+
 class odict(dict):
-    def __init__(self, dict = None):
-        dict.__init__(self, dict)
+    def __init__(self, mapping=None):
+        if mapping is None:
+            mapping = dict()
+        dict.__init__(self, mapping)
         self._keys = []
 
     def __delitem__(self, key):
