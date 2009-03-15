@@ -9,18 +9,27 @@ from zope.location.interfaces import ILocation
 from zope.annotation.interfaces import IAttributeAnnotatable
 
 ###############################################################################   
-# Factories and Accessors
+# Interfaces to move.
+# target not defined yet. maybe ``cornerstone.model``
 ###############################################################################
 
-class IModelFactory(Interface):
-    """Factory for ``IXMIModel`` implementing instance.
+class INode(ILocation):
+    """A node.
+    
+    Same signature as ``agx.core.interfaces.INode``.
     """
     
-    def __call__(sourcepath):
-        """Create and return ``IXMIModel`` implementing instance.
-        
-        @param sourcepath: Source path of *.xmi, *.zargo, *.zuml
+    nodetype = Attribute(u"Type of this node as string.")
+    
+    children = Attribute(u"Children of this node.")
+    
+    def __iter__():
+        """children iteration.
         """
+
+###############################################################################   
+# Interfaces to delete. -> moved to ``agx.transform.uml2fs.interfaces``
+###############################################################################
 
 class IDataAcquirer(IReadMapping):
     """Interface for acquiring data from ``zope.location.interfaces.ILocation``
@@ -38,12 +47,15 @@ class IDataAcquirer(IReadMapping):
         @param name: key of requested data.
         """
     
-    def get(name, default=None, aggregate=False):
-        """Acquire data from element.
+    def get(name, default=None, aggregate=False, depth=-1, breaktype=None):
+        """Acquire data from object.
         
         @param name: key of requested data.
         @param default: default return value.
         @param aggregate: Flag wether to aggregate requested value.
+        @param depth: recurion depth. default ``-1`` is recurion until root.
+        @param breaktype: ``agx.core.interfaces.INode.nodetype`` defining
+                          the acquisition break point.
         """
 
 class IDataReader(IReadMapping):
@@ -77,6 +89,20 @@ class IAnnotation(IDataReader):
     """
 
 ###############################################################################   
+# Factories and Accessors
+###############################################################################
+
+class IModelFactory(Interface):
+    """Factory for ``IXMIModel`` implementing instance.
+    """
+    
+    def __call__(sourcepath):
+        """Create and return ``IXMIModel`` implementing instance.
+        
+        @param sourcepath: Source path of *.xmi, *.zargo, *.zuml
+        """
+
+###############################################################################   
 # XMI Version
 ###############################################################################
 
@@ -95,26 +121,19 @@ class IXMIFlavor(Interface):
 class IXMIStateMachineContainer(Interface):
     """XXX
     """
-    
-    elementname = Attribute(u"The internal element name")
 
 ###############################################################################   
-# Eelements
+# Elements
 ###############################################################################
 
-class IXMIElement(IAttributeAnnotatable, ILocation):
+class IXMIElement(IAttributeAnnotatable, INode):
     """An XMI Element.
     """
-    
-    elementname = Attribute(u"The internal element name")
             
     XMI = Attribute(u"the current IXMIFlavor instance")
     
     cleanName = Attribute(u"the clean name consists only of [a..z A..Z 0..9 _]"
                           u"and does not start with [0..9]")
-    
-    children = Attribute(u"all children elements, also IXMIElement" 
-                         u"implementations are expected")
     
     id = Attribute(u"XMI: identifier. string expected")
 
