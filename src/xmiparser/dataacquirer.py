@@ -1,11 +1,9 @@
 # Copyright 2003-2009, BlueDynamics Alliance - http://bluedynamics.com
 # GNU General Public License Version 2 or later
 
-# XXX move me to ``agx.transform.uml2fs``
-
 from zope.interface import implements
 from zope.location.location import LocationIterator
-from interfaces import IDataAcquirer
+from cornerstone.model.interfaces import IDataAcquirer
 
 class DataAcquirerBase(object):
     

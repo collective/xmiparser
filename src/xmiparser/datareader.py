@@ -2,7 +2,7 @@
 # GNU General Public License Version 2 or later
 
 from zope.interface import implements
-from interfaces import IDataReader
+from cornerstone.model.interfaces import IDataReader
 from interfaces import ITGV
 from interfaces import IStereotype
 from interfaces import IAnnotation
