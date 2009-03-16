@@ -1,8 +1,0 @@
-
-Data Acquirers
-==============
-
-  >>> from xmiparser.dataacquirer import DataAcquirerBase
-  >>> from xmiparser.dataacquirer import AnnotationAcquirer
-  >>> from xmiparser.dataacquirer import TaggedValueAcquirer
-  >>> from xmiparser.dataacquirer import StereotypeAcquirer

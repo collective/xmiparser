@@ -18,8 +18,6 @@ optionflags = doctest.NORMALIZE_WHITESPACE | \
 TESTFILES = [
     '../factory.txt',
     '../xmielements.txt',
-    '../dataacquirer.txt',
-    '../datareader.txt',
 ]
 
 datadir = os.path.join(os.path.dirname(__file__), 'data') 

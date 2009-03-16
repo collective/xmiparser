@@ -7,8 +7,6 @@ from zope.interface.common.mapping import IReadMapping
 from zope.interface.common.mapping import IWriteMapping
 from zope.location.interfaces import ILocation
 from zope.annotation.interfaces import IAttributeAnnotatable
-from cornerstone.model.interfaces import INode
-from cornerstone.model.interfaces import IDataReader
 
 ###############################################################################   
 # Factories and Accessors
@@ -23,25 +21,6 @@ class IModelFactory(Interface):
         
         @param sourcepath: Source path of *.xmi, *.zargo, *.zuml
         """
-
-###############################################################################   
-# Data readers.
-###############################################################################
-
-class ITGV(IDataReader):
-    """Promised to be an adapter for ``xmiparser.interfaces.IXMIElement`` to
-    read tagged values.
-    """
-
-class IStereotype(IDataReader):
-    """Promised to be an adapter for ``xmiparser.interfaces.IXMIElement`` to
-    read stereotypes.
-    """
-
-class IAnnotation(IDataReader):
-    """Promised to be an adapter for ``xmiparser.interfaces.IXMIElement`` to
-    read annotations.
-    """
 
 ###############################################################################   
 # XMI Version
@@ -67,7 +46,7 @@ class IXMIStateMachineContainer(Interface):
 # Elements
 ###############################################################################
 
-class IXMIElement(IAttributeAnnotatable, INode):
+class IXMIElement(IAttributeAnnotatable):
     """An XMI Element.
     """
             
@@ -99,6 +78,12 @@ class IXMIElement(IAttributeAnnotatable, INode):
                             u"list expected")
     
     clientDependencies = Attribute(u"UML: ??Which dependency is this?") # XXX 
+    
+    children = Attribute(u"list of children")
+    
+    def __iter__():
+        """Iterate through children.
+        """
 
 class IXMIPackage(IXMIElement, IXMIStateMachineContainer):
     """An XMI Package.

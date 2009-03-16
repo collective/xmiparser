@@ -5,21 +5,4 @@
   <!-- model factory -->
   <utility factory=".factory.ModelFactory" />
   
-  <!-- data readers -->
-  <adapter
-    for="xmiparser.interfaces.IXMIElement"
-    provides=".interfaces.ITGV"
-    factory=".datareader.TGV"
-  />
-  <adapter
-    for="xmiparser.interfaces.IXMIElement"
-    provides=".interfaces.IStereotype"
-    factory=".datareader.Stereotype"
-  />
-  <adapter
-    for="xmiparser.interfaces.IXMIElement"
-    provides=".interfaces.IAnnotation"
-    factory=".datareader.Annotation"
-  />
-  
 </configure>

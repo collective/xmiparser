@@ -34,7 +34,6 @@ setup(name='xmiparser',
           'stripogram',
           'zope.annotation',
           'zope.location',
-          'cornerstone.model',
       ],
       extras_require = dict(
           test=[

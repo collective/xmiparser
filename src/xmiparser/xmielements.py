@@ -53,14 +53,10 @@ class PseudoElement(object):
         return self.xminame
 
 class XMIElement(object):
-    
     implements(IXMIElement)
-
     __parent__ = None
     __name__ = None
     __XMI__ = None
-    
-    nodetype = u'XMIElement'
         
     def __init__(self, parent, domElement=None, name='', *args, **kwargs):
         self.domElement = domElement
@@ -355,10 +351,7 @@ class XMIElement(object):
 class StateMachineContainer(object):
     """Mixin to be a statemachine container.
     """
-    
     implements(IXMIStateMachineContainer)
-    
-    nodetype = u'XMIStateMachineContainer'
        
     def __init__(self, pa, el):
         self.statemachines = []
@@ -427,11 +420,7 @@ class StateMachineContainer(object):
         return self.statemachines
 
 class XMIPackage(StateMachineContainer, XMIElement):
-    
     implements(IXMIPackage)
-    
-    nodetype = u'XMIPackage'
-
     project = None
     isroot = 0
 
@@ -633,11 +622,7 @@ class XMIPackage(StateMachineContainer, XMIElement):
         return ".".join([p.xminame for p in path])
 
 class XMIModel(XMIPackage):
-    
     implements(IXMIModel)
-    
-    nodetype = u'XMIModel'
-
     isroot = 1
     parent = None
     diagrams = {}
@@ -703,11 +688,7 @@ class XMIModel(XMIPackage):
             smdict[uf].addClass(cl)
 
 class XMIClass(XMIElement, StateMachineContainer):
-    
     implements(IXMIClass)
-    
-    nodetype = u'XMIClass'
-    
     package = None
     isinterface = 0
     # [Reinout] Doesn't this mean that there's just one class-wide
@@ -1052,19 +1033,11 @@ class XMIClass(XMIElement, StateMachineContainer):
         return self.statemachine
 
 class XMIInterface(XMIClass):
-    
     implements(IXMIInterface)
-    
-    nodetype = u'XMIInterface'
-    
     isinterface = 1
 
 class XMIMethodParameter(XMIElement):
-    
     implements(IXMIMethodParameter)
-    
-    nodetype = u'XMIMethodParameter'
-    
     default = None
     has_default = 0
 
@@ -1097,11 +1070,7 @@ class XMIMethodParameter(XMIElement):
             return self.xminame
 
 class XMIMethod (XMIElement):
-    
     implements(IXMIMethod)
-    
-    nodetype = u'XMIMethod'
-    
     params = []
 
     def _buildParameters(self):
@@ -1156,11 +1125,7 @@ class XMIMethod (XMIElement):
         return name
 
 class XMIAttribute (XMIElement):
-    
     implements(IXMIAttribute)
-    
-    nodetype = u'XMIAttribute'
-    
     default = None
     has_default = 0
 
@@ -1204,10 +1169,7 @@ class XMIAttribute (XMIElement):
         return self.getMultiplicity()[1]
 
 class XMIAssocEnd (XMIElement):
-    
     implements(IXMIAssocEnd)
-    
-    nodetype = u'XMIAssocEnd'
 
     def associationEndName(self, ignore_cardinality=0):
         name = str(self.__name__)
@@ -1256,11 +1218,7 @@ class XMIAssocEnd (XMIElement):
         return self.getMultiplicity()[1]
 
 class XMIAssociation (XMIElement):
-    
     implements(IXMIAssociation)
-    
-    nodetype = u'XMIAssociation'
-    
     fromEnd = None
     toEnd = None
 
@@ -1338,25 +1296,14 @@ class XMIAssociation (XMIElement):
             return self.fromEnd.getTarget()
 
 class XMIAssociationClass(XMIClass, XMIAssociation):
-    
     implements(IXMIAssociationClass)
-    
-    nodetype = u'XMIAssociationClass'
-    
     isAssociationClass = 1
 
 class XMIAbstraction(XMIElement):
-    
     implements(IXMIAbstraction)
-    
-    nodetype = u'XMIAbstraction'
 
 class XMIDependency(XMIElement):
-    
     implements(IXMIDependency)
-    
-    nodetype = u'XMIDependency'
-    
     client = None
     supplier = None
 
@@ -1386,10 +1333,7 @@ class XMIDependency(XMIElement):
             return self.client
 
 class XMIStateMachine(XMIElement):
-    
     implements(IXMIStateMachine)
-    
-    nodetype = u'XMIStateMachine'
     
     def __init__(self, *args, **kwargs):        
         self.states = []    
@@ -1551,11 +1495,7 @@ class XMIStateMachine(XMIElement):
         return list(actionnames)
 
 class XMIStateTransition(XMIElement):
-    
     implements(IXMIStateTransition)
-    
-    nodetype = u'XMIStateTransition'
-    
     targetState = None
     sourceState = None
     action = None
@@ -1685,11 +1625,7 @@ class XMIStateTransition(XMIElement):
         return trigger_type
 
 class XMIAction(XMIElement):
-    
     implements(IXMIAction)
-    
-    nodetype = u'XMIAction'
-    
     expression = None
     
     def _initFromDOM(self):
@@ -1731,11 +1667,7 @@ class XMIAction(XMIElement):
         return result
 
 class XMIGuard(XMIElement):
-    
     implements(IXMIGuard)
-    
-    nodetype = u'XMIGuard'
-    
     expression = None
     
     def _initFromDOM(self):
@@ -1747,11 +1679,7 @@ class XMIGuard(XMIElement):
         return self.expression
 
 class XMIState(XMIElement):
-    
     implements(IXMIState)
-    
-    nodetype = u'XMIState'
-    
     isinitial = 0
 
     def __init__(self, *args, **kwargs):
@@ -1822,10 +1750,7 @@ class XMIState(XMIElement):
         return fromTaggedValue or fromDocumentation or default
 
 class XMICompositeState(XMIState):
-    
     implements(IXMICompositeState)
-    
-    nodetype = u'XMICompositeState'
 
 # Necessary for Poseidon because in Poseidon we cannot assign a name
 # to a statemachine, so we have to pull the name of the statemachine
@@ -1834,11 +1759,7 @@ diagrams = {}
 diagramsByModel = {}
 
 class XMIDiagram(XMIElement):
-    
     implements(IXMIDiagram)
-    
-    nodetype = u'XMIDiagram'
-    
     modelElement = None
 
     def _initFromDOM(self):
