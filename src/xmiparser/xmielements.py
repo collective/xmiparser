@@ -4,7 +4,7 @@
 import os.path
 import logging
 from sets import Set
-from odict import odict
+from zodict import zodict as odict
 from stripogram import html2text
 from zope.interface import implements
 from xmiparser.utils import mapName
