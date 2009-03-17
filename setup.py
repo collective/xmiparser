@@ -30,6 +30,7 @@ setup(name='xmiparser',
       zip_safe=False,
       install_requires=[
           'setuptools',
+          'odict',
           'zope.interface',
           'stripogram',
           'zope.annotation',
