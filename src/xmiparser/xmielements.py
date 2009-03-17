@@ -4,9 +4,9 @@
 import os.path
 import logging
 from sets import Set
+from odict import odict
 from stripogram import html2text
 from zope.interface import implements
-from xmiparser.odict import odict
 from xmiparser.utils import mapName
 from xmiparser.utils import toBoolean
 from xmiparser.utils import normalize
