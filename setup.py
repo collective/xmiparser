@@ -31,10 +31,11 @@ setup(name='xmiparser',
       install_requires=[
           'setuptools',
           'zodict',
-          'zope.interface',
           'stripogram',
-          'zope.annotation',
+          'zope.interface',
+          'zope.annotation', # this will propably be removed
           'zope.location',
+          'zodict',
       ],
       extras_require = dict(
           test=[

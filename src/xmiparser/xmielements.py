@@ -4,7 +4,8 @@
 import os.path
 import logging
 from sets import Set
-from zodict import zodict as odict
+from odict import odict
+from zodict.node import Node
 from stripogram import html2text
 from zope.interface import implements
 from xmiparser.utils import mapName
@@ -38,7 +39,8 @@ from xmiparser.interfaces import IXMIDiagram
     
 log = logging.getLogger('XMIparser')
 
-allObjects = {} # XXX i dont like this concept of a global dict (jensens)
+allObjects = {} # XXX: i dont like this concept of a global dict (jensens)
+             #         me neither (rnix))
 
 class PseudoElement(object):
     # urgh, needed to pretend a class
@@ -52,19 +54,20 @@ class PseudoElement(object):
     def getModuleName(self):
         return self.xminame
 
-class XMIElement(object):
+class XMIElement(Node):
     implements(IXMIElement)
+    
     __parent__ = None
     __name__ = None
     __XMI__ = None
         
-    def __init__(self, parent, domElement=None, name='', *args, **kwargs):
-        self.domElement = domElement
+    def __init__(self, dom=None, name=None, *args, **kwargs):
+        Node.__init__(self)
+        self.domElement = dom
         self.__name__ = name
-        self.__parent__ = parent
+        self.__parent__ = None
         self.id = ''
         self.cleanName = ''
-        self.children = []
         self.maxOccurs = 1
         self.isComplex = False
         self.type = 'NoneType'
@@ -76,18 +79,9 @@ class XMIElement(object):
         self.clientDependencies = []
         # Take kwargs as attributes
         self.__dict__.update(kwargs)
-        if domElement:
-            allObjects[domElement.getAttribute('xmi.id')] = self
-            self._initFromDOM()           
-
-    def __str__(self):
-        return '<%s %s)>' % (self.__class__.__name__, self.xminame)
-    
-    __repr__ = __str__
-    
-    def __iter__(self):
-        for child in self.children:
-            yield child
+        if dom:
+            allObjects[dom.getAttribute('xmi.id')] = self
+            self._initFromDOM()
     
     @property 
     def XMI(self):
@@ -104,12 +98,16 @@ class XMIElement(object):
         """Gather the tagnames and tagvalues for the element.
         """
         log.debug("Gathering the taggedvalues for element %s.", self.__name__)
-        tgvsm = getElementByTagName(self.domElement, self.XMI.TAGGED_VALUE_MODEL,
-                                    default=None, recursive=0)
+        tgvsm = getElementByTagName(self.domElement,
+                                    self.XMI.TAGGED_VALUE_MODEL,
+                                    default=None,
+                                    recursive=0)
         if tgvsm is None:
             log.debug("Found nothing.")
             return
-        tgvs = getElementsByTagName(tgvsm, self.XMI.TAGGED_VALUE, recursive=0)
+        tgvs = getElementsByTagName(tgvsm,
+                                    self.XMI.TAGGED_VALUE,
+                                    recursive=0)
         for tgv in tgvs:
             try:
                 tagname, tagvalue = self.XMI.getTaggedValue(tgv)
@@ -137,7 +135,9 @@ class XMIElement(object):
                   self.__name__, self.id)
         self._parseTaggedValues()
         self._calculateStereotype()
-        mult = getElementByTagName(domElement, self.XMI.MULTIPLICITY, None)
+        mult = getElementByTagName(domElement,
+                                   self.XMI.MULTIPLICITY,
+                                   None)
         if mult:
             maxNodes = mult.getElementsByTagName(self.XMI.MULT_MAX)
             if maxNodes and len(maxNodes):
@@ -236,8 +236,9 @@ class XMIElement(object):
         return None
 
     def getRefs(self):
-        """Returns all referenced schema names."""
-        return [str(c.getRef()) for c in self.children if c.getRef()]
+        """Returns all referenced schema names.
+        """
+        return [str(c.getRef()) for c in self.values() if c.getRef()]
 
     def show(self, outfile, level):
         showLevel(outfile, level)
@@ -253,7 +254,7 @@ class XMIElement(object):
             showLevel(outfile, level + 1)
             outfile.write('key: %s  value: %s\n' % \
                 (key, self.attributeDefs[key]))
-        for child in self.children:
+        for child in self.values():
             child.show(outfile, level + 1)
 
     def addOperationDefs(self, m):
@@ -353,7 +354,7 @@ class StateMachineContainer(object):
     """
     implements(IXMIStateMachineContainer)
        
-    def __init__(self, pa, el):
+    def __init__(self):
         self.statemachines = []
 
     def findStateMachines(self):
@@ -424,22 +425,26 @@ class XMIPackage(StateMachineContainer, XMIElement):
     project = None
     isroot = 0
 
-    def __init__(self, parent, el):
+    def __init__(self, dom):
         self.classes = []
         self.interfaces = []
         self.packages = []
-        super(XMIPackage, self).__init__(parent, el)
+        StateMachineContainer.__init__(self)
+        XMIElement.__init__(self, dom)
 
     def _initFromDOM(self):
         self.parentPackage = None
-        super(XMIPackage, self)._initFromDOM()
+        XMIElement._initFromDOM(self)
         self._buildPackages()
         self._buildStateMachines()
         self._buildInterfaces()
         self._buildClasses()
-        self.children += self.getClasses()
-        self.children += self.getPackages()
-        self.children += self.getInterfaces()
+
+# XXX Later (rnix)
+
+#        self.children += self.getClasses()
+#        self.children += self.getPackages()
+#        self.children += self.getInterfaces()
 
 
     def getClasses(self, recursive=0, ignoreInternals=True):
@@ -629,13 +634,15 @@ class XMIModel(XMIPackage):
     diagramsByModel = {}
 
     def __init__(self, doc, XMI):
-        self.document = doc
         self.__XMI__ = XMI
-        self.content = self.XMI.getContent(doc)
+        self.document = doc
         self.model = self.XMI.getModel(doc)
-        super(XMIModel, self).__init__(None, self.model)
+        self.content = self.XMI.getContent(doc)
+        XMIPackage.__init__(self, self.model)
+        self.__name__ = 'xmimodel'
         
     def _initFromDOM(self):
+        doc = self.document
         self._buildDiagrams()
         self._associateClassesToStateMachines()
         for c in self.getClasses(recursive=1):
@@ -784,15 +791,18 @@ class XMIClass(XMIElement, StateMachineContainer):
         return res
 
     def _buildChildren(self, domElement):
+        pass
 
-        for el in domElement.getElementsByTagName(XMI.ATTRIBUTE):
-            att = XMIAttribute(parent, el)
-            att.setParent(self)
-            self.addAttributeDef(att)
-        for el in domElement.getElementsByTagName(XMI.METHOD):
-            meth = XMIMethod(parent, el)
-            meth.setParent(self)
-            self.addOperationDefs(meth)
+# XXX: later (rnix)
+
+#        for el in domElement.getElementsByTagName(XMI.ATTRIBUTE):
+#            att = XMIAttribute(parent, el)
+#            att.setParent(self)
+#            self.addAttributeDef(att)
+#        for el in domElement.getElementsByTagName(XMI.METHOD):
+#            meth = XMIMethod(parent, el)
+#            meth.setParent(self)
+#            self.addOperationDefs(meth)
 
 # XXX: this is stuff for the generator!
 #        if self.XMI.getGenerationOption('default_field_generation'):

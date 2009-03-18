@@ -78,12 +78,6 @@ class IXMIElement(IAttributeAnnotatable):
                             u"list expected")
     
     clientDependencies = Attribute(u"UML: ??Which dependency is this?") # XXX 
-    
-    children = Attribute(u"list of children")
-    
-    def __iter__():
-        """Iterate through children.
-        """
 
 class IXMIPackage(IXMIElement, IXMIStateMachineContainer):
     """An XMI Package.
