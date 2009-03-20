@@ -87,7 +87,7 @@ class ModelFactory(object):
 #                self._buildStereoTypes(profile_doc,profile=profile_key)
 #        datatypes = self._buildDataTypes(doc) #XXX unused
 #        stereotypes = self._buildStereoTypes(doc) #XXX unused
-        root = xmielements.XMIModel(doc, self.XMI)
+        root = xmielements.XMIModel('model', doc, self.XMI)
         root.__xmi__ = self.XMI
         log.debug("Created XMI Model.")
         return root

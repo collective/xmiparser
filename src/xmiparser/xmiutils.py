@@ -35,7 +35,6 @@ def getAttributeValue(domElement, tagName=None, default=_marker, recursive=0,
         return default
     return el.firstChild.nodeValue
 
-
 def getElementsByTagName(domElement, tagName, recursive=0):
     """Returns elements by tag name.
 
@@ -74,7 +73,3 @@ def hasClassFeatures(domClass):
     return len(domClass.getElementsByTagName(XMI.FEATURE)) or \
                 len(domClass.getElementsByTagName(XMI.ATTRIBUTE)) or \
                 len(domClass.getElementsByTagName(XMI.METHOD))
-
-
-#----------------------------------------------------------
-

@@ -2,10 +2,6 @@
 XMIParser model factory
 =======================
 
-The way to get a ``xmiparser.interfaces.IXMIModel`` implementation is some kind
-of heavy, so this package provides a factory to do the job for you, done via an
-utility.
-
 As input, the factory accepts ``*.zargo``, ``*.zuml`` and ``*.xmi`` files,
 expecting the file path.
 
@@ -17,5 +13,6 @@ get a clue what self.generate_packages and self.generate_datatypes on
 ArchetypesGenerator should be good for.
 
   >>> import os
-  >>> model = factory(os.path.join(datadir, '01_pkg_class.zargo'))
-  >>> # model
+  >>> model = factory(os.path.join(datadir, 'foo.bar.baz.egg.zuml'))
+  >>> model
+  <xmiparser.xmielements.XMIModel object at ...>

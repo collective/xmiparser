@@ -8,6 +8,7 @@ from odict import odict
 from zodict.node import Node
 from stripogram import html2text
 from zope.interface import implements
+from zope.location import LocationIterator
 from xmiparser.utils import mapName
 from xmiparser.utils import toBoolean
 from xmiparser.utils import normalize
@@ -40,11 +41,11 @@ from xmiparser.interfaces import IXMIDiagram
 log = logging.getLogger('XMIparser')
 
 allObjects = {} # XXX: i dont like this concept of a global dict (jensens)
-             #         me neither (rnix))
+                #      me neither (rnix))
 
 class PseudoElement(object):
-    # urgh, needed to pretend a class
-    # wtf - why is this needed?
+    """Need to pretend a class - why?
+    """
     def __init__(self, **kw):
         self.__dict__.update(kw)
 
@@ -57,42 +58,54 @@ class PseudoElement(object):
 class XMIElement(Node):
     implements(IXMIElement)
     
-    __parent__ = None
-    __name__ = None
     __XMI__ = None
         
-    def __init__(self, dom=None, name=None, *args, **kwargs):
-        Node.__init__(self)
+    def __init__(self, name, dom, *args, **kwargs):
+        Node.__init__(self, name)
         self.domElement = dom
-        self.__name__ = name
-        self.__parent__ = None
         self.id = ''
         self.cleanName = ''
         self.maxOccurs = 1
         self.isComplex = False
-        self.type = 'NoneType'
-        self.subTypes = []
+        self.type = 'NoneType' # phew !?
+        self.subTypes = [] # double phew !?
         self.attributeDefs = []
         self.operationDefs = []
         self.tgvs = odict()
         self.stereotypes = []
         self.clientDependencies = []
+        
         # Take kwargs as attributes
+        # XXX: this looks dangerous in the complex context of XMI elements and
+        #      their class hirarchy (rnix)
         self.__dict__.update(kwargs)
-        if dom:
+    
+    #def __setitem__(self, key, val):
+    #    val.__name__ = key
+    #    val.__parent__ = self
+    #    zodict.__setitem__(self, key, val)
+    
+    def initialize(self, parent):
+        """Workaround function.
+        """
+        self.__parent__ = parent
+        if self.domElement:
             allObjects[dom.getAttribute('xmi.id')] = self
             self._initFromDOM()
+    
+    __repr__ = object.__repr__
     
     @property 
     def XMI(self):
         if self.__XMI__:
             return self.__XMI__
-        if self.__parent__:
-            return self.__parent__.__XMI__
+        for parent in LocationIterator(self):
+            if parent.__XMI__:
+                return parent.__XMI__
         raise AttributeError, 'No XMI flavor given' 
 
-    def getParent(self):
-        return self.__parent__
+    #def getParent(self):
+    #    return self.__parent__
 
     def _parseTaggedValues(self):
         """Gather the tagnames and tagvalues for the element.
@@ -166,7 +179,10 @@ class XMIElement(Node):
 
         If given, also check for a matching value.
         """
-        # XXX nice convinience, but should be moved outside xmiparser
+        
+        # XXX nice convinience, but should be moved outside xmiparser (jens)
+        #     move this to ``agx.io.uml`` as datareader (rnix)
+        
         log.debug("Searching for presence of an attribute with tag '%s'.", tag)
         if value:
             log.debug("But, extra condition, the value should be '%s'.", value)
@@ -198,27 +214,30 @@ class XMIElement(Node):
         wrap(integer) -- default: 60, set to 0: do not wrap,
                          all other >0: wrap with this value
         """
+        
+        # XXX nice convinience, but should be moved outside xmiparser (jens)
+        #     move this to ``agx.io.uml`` as datareader (rnix)
 
         log.debug("Not Implemented: Trying to find documentation for element.")
 
         # XXX TODO: fetch UML documentation? 
-        return ''
+        return '' # ??
 
         # The rest isn't executed.
-        doc = documentation_of_element #todo
-        if not doc:
-            log.debug("Didn't find a 'documentation'. "
-                      "Returning empty string.")
-            return ''
-        if wrap == -1:
-            wrap = 64
-        doc = html2text(doc, (), 0, 1000000).strip()
-        if wrap:
-            log.debug("Wrapping the documenation.")
-            doc = doWrap(doc, wrap)
-        log.debug("Returning documenation '%r'.",
-                  doc)
-        return doc
+#        doc = documentation_of_element #todo
+#        if not doc:
+#            log.debug("Didn't find a 'documentation'. "
+#                      "Returning empty string.")
+#            return ''
+#        if wrap == -1:
+#            wrap = 64
+#        doc = html2text(doc, (), 0, 1000000).strip()
+#        if wrap:
+#            log.debug("Wrapping the documenation.")
+#            doc = doWrap(doc, wrap)
+#        log.debug("Returning documenation '%r'.",
+#                  doc)
+#        return doc
 
     def getUnmappedCleanName(self):
         return self.unmappedCleanName
@@ -241,6 +260,8 @@ class XMIElement(Node):
         return [str(c.getRef()) for c in self.values() if c.getRef()]
 
     def show(self, outfile, level):
+        """Convenience, move this.
+        """
         showLevel(outfile, level)
         outfile.write('Name: %s  Type: %s\n' % (self.__name__, self.type))
         showLevel(outfile, level)
@@ -257,12 +278,9 @@ class XMIElement(Node):
         for child in self.values():
             child.show(outfile, level + 1)
 
-    def addOperationDefs(self, m):
-        if m.xminame:
-            self.operationDefs.append(m)
-
     def getCleanName(self):
-        # If there is a namespace, replace it with an underscore.
+        """If there is a namespace, replace it with an underscore.
+        """
         if self.xminame:
             self.unmappedCleanName = str(self.xminame).translate(clean_trans)
         else:
@@ -271,10 +289,16 @@ class XMIElement(Node):
 
     @property
     def isIntrinsicType(self):
+        """XXX Is this a UML terminus? (rnix)
+        """
         return str(self.type).startswith('xs:')
 
     def _buildChildren(self, domElement):
         pass
+    
+    def addOperationDefs(self, m):
+        if m.xminame:
+            self.operationDefs.append(m)
 
     def getOperationDefs(self, recursive=0):
         log.debug("Getting method definitions (recursive=%s)...", recursive)
@@ -292,6 +316,8 @@ class XMIElement(Node):
         return self.XMI.calculateStereotype(self)
 
     def hasStereotype(self, stereotypes):
+        """XXX: Convenience, move outside ??
+        """
         log.debug("Looking if element has stereotype %r", stereotypes)
         if isinstance(stereotypes, (str, unicode)):
             stereotypes = [stereotypes]
@@ -302,7 +328,10 @@ class XMIElement(Node):
 
     @property
     def acquirePackage(self):
-        """Acquires the package to which this object belongs."""
+        """Acquires the package to which this object belongs.
+        
+        XXX: Convenience, move outside ??
+        """
         if self.package is not None:
             return self.package
         if self.getParent():
@@ -310,24 +339,39 @@ class XMIElement(Node):
         return None
 
     def getPath(self):
+        """XXX: Remove this and use INode.path instead
+        
+        DEPRACTED
+        """
         return [self.xminame]
 
     def getModuleName(self, lower=False):
-        """Gets the name of the module the class is in."""
+        """Gets the name of the module the class is in.
+        
+        XXX: Convenience, move outside ??
+        """
         name = self.tgvs.get('module', self.cleanName)
         return name.lower() if lower else name 
 
     def addClientDependency(self, dep):
+        """Whats this?
+        
+        XXX: doc
+        """
         self.clientDependencies.append(dep)
 
     def getClientDependencies(self, includeParents=False,
                               dependencyStereotypes=None):
-                                  
+        """Whats this?
+        
+        XXX: doc
+        """
         res = list(self.clientDependencies)
         if includeParents:
             o = self.getParent()
             if o:
-                res.extend(o.getClientDependencies(includeParents=includeParents))
+                res.extend(o.getClientDependencies(\
+                               includeParents=includeParents))
                 res.reverse()
         if dependencyStereotypes:
             res = [r for r in res if r.hasStereotype(dependencyStereotypes)]
@@ -336,6 +380,10 @@ class XMIElement(Node):
     def getClientDependencyClasses(self, includeParents=False,
                                    dependencyStereotypes=None,
                                    targetStereotypes=None):
+        """Whats this?
+        
+        XXX: doc
+        """
         res = [dep.getSupplier()
                for dep in self.getClientDependencies(
                    includeParents=includeParents,
@@ -391,6 +439,7 @@ class StateMachineContainer(object):
         statemachines = self.findStateMachines()
         for m in statemachines:
             sm = XMIStateMachine(m, parent=self)
+            sm.initialize(name, m)
             if sm.xminame:
                 # Determine the correct product where it belongs
                 products = [c.package.getProduct()
@@ -425,12 +474,12 @@ class XMIPackage(StateMachineContainer, XMIElement):
     project = None
     isroot = 0
 
-    def __init__(self, dom):
+    def __init__(self, name, dom):
         self.classes = []
         self.interfaces = []
         self.packages = []
         StateMachineContainer.__init__(self)
-        XMIElement.__init__(self, dom)
+        XMIElement.__init__(self, name, dom)
 
     def _initFromDOM(self):
         self.parentPackage = None
@@ -502,8 +551,9 @@ class XMIPackage(StateMachineContainer, XMIElement):
         for p in packEls:
             if self.XMI.getName(p) == 'java':
                 continue
-            package = XMIPackage(self, p)
-            self.addPackage(package)
+            package = XMIPackage(self.XMI.getName(p), p)
+            package.initialize(self)
+            self.addPackage(package) # do this by self['foo'] = node
             package.buildPackages()
 
     def _buildClasses(self):
@@ -633,13 +683,12 @@ class XMIModel(XMIPackage):
     diagrams = {}
     diagramsByModel = {}
 
-    def __init__(self, doc, XMI):
+    def __init__(self, name, doc, XMI):
         self.__XMI__ = XMI
         self.document = doc
         self.model = self.XMI.getModel(doc)
         self.content = self.XMI.getContent(doc)
-        XMIPackage.__init__(self, self.model)
-        self.__name__ = 'xmimodel'
+        XMIPackage.__init__(self, name, self.model)
         
     def _initFromDOM(self):
         doc = self.document
@@ -656,8 +705,10 @@ class XMIModel(XMIPackage):
         self.XMI.buildDependencies(doc, allObjects)
 
     def findStateMachines(self):
-        statemachines = getElementsByTagName(self.content, self.XMI.STATEMACHINE)
-        statemachines.extend(getElementsByTagName(self.model, self.XMI.STATEMACHINE))
+        statemachines = getElementsByTagName(self.content,
+                                             self.XMI.STATEMACHINE)
+        statemachines.extend(getElementsByTagName(self.model,
+                                                  self.XMI.STATEMACHINE))
         log.debug("Found the following state machines: %r.", statemachines)
         ownedElement = self.XMI.getOwnedElement(self.domElement)
         statemachines.extend(getElementsByTagName(ownedElement,
@@ -667,7 +718,9 @@ class XMIModel(XMIPackage):
     def _buildDiagrams(self):
         diagram_els = getElementsByTagName(self.content, self.XMI.DIAGRAM)
         for el in diagram_els:
-            diagram = XMIDiagram(self, el)
+            diagram = XMIDiagram(self.XMI.getName(el), el)
+            diagram.initialize(self)
+            # XXX add to self['diagrams']
             self.diagrams[diagram.id] = diagram
             self.diagramsByModel[diagram.getModelElementId()] = diagram
 
@@ -703,14 +756,14 @@ class XMIClass(XMIElement, StateMachineContainer):
     # machine? Bug?
     statemachine = None
 
-    def __init__(self, *args, **kw):
+    def __init__(self, name, dom, *args, **kw):
         log.debug("Initialising class.")
         # ugh, setPackage(). Handle this with some more generic zope3
         # parent() relation. [reinout]
         self.setPackage(kw.get('package', None))
         log.debug("Package set to '%s'.", self.package.xminame)
         log.debug("Running Parents's init...")
-        super(XMIClass, self).__init__(*args, **kw)
+        XMIElement.__init__(self, name, dom, *args, **kw)
         self.assocsTo = []
         self.assocsFrom = []
         self.genChildren = []
@@ -720,7 +773,7 @@ class XMIClass(XMIElement, StateMachineContainer):
         self.adaptationChildren = []
         self.adaptationParents = []
         self.internalOnly = 0
-        self.type = self.__name__
+        self.type = self.__name__ # ???
 
     def setPackage(self, p):
         self.package = p
@@ -764,7 +817,8 @@ class XMIClass(XMIElement, StateMachineContainer):
         return a in self.getAttributeNames()
 
     def getGenChildren(self, recursive=0):
-        """Return the generalization children."""
+        """Return the generalization children.
+        """
         log.debug("Finding this class's children...")
         res = [c for c in self.genChildren]
         if recursive:
@@ -776,11 +830,13 @@ class XMIClass(XMIElement, StateMachineContainer):
         return res
 
     def getGenChildrenNames(self, recursive=0):
-        """Returns the names of the generalization children."""
+        """Returns the names of the generalization children.
+        """
         return [o.xminame for o in self.getGenChildren(recursive=recursive)]
 
     def getGenParents(self, recursive = 0):
-        """Returns generalization parents."""
+        """Returns generalization parents.
+        """
         log.debug("Looking for this class's parents...")
         res = [c for c in self.genParents]
         if recursive:
@@ -791,18 +847,16 @@ class XMIClass(XMIElement, StateMachineContainer):
         return res
 
     def _buildChildren(self, domElement):
-        pass
-
-# XXX: later (rnix)
-
-#        for el in domElement.getElementsByTagName(XMI.ATTRIBUTE):
-#            att = XMIAttribute(parent, el)
-#            att.setParent(self)
-#            self.addAttributeDef(att)
-#        for el in domElement.getElementsByTagName(XMI.METHOD):
-#            meth = XMIMethod(parent, el)
-#            meth.setParent(self)
-#            self.addOperationDefs(meth)
+        for el in domElement.getElementsByTagName(XMI.ATTRIBUTE):
+            att = XMIAttribute(el.name, el)
+            att.initialize(self)
+            att.setParent(self) # XXX remove
+            self.addAttributeDef(att)
+        for el in domElement.getElementsByTagName(XMI.METHOD):
+            meth = XMIMethod(el.name, el)
+            meth.initialize(self)
+            meth.setParent(self)
+            self.addOperationDefs(meth)
 
 # XXX: this is stuff for the generator!
 #        if self.XMI.getGenerationOption('default_field_generation'):
@@ -874,10 +928,13 @@ class XMIClass(XMIElement, StateMachineContainer):
         UML, a composition is a filled rhomb. (Dutch: 'wybertje').
         """
 
-        log.debug("Trying to figure out if the '%s' class is dependent.", self.xminame)
-        aggs = self.getToAssociations(aggtypes=['aggregate']) or self.getFromAssociations(aggtypesTo=['aggregate'])
+        log.debug("Trying to figure out if the '%s' class is dependent.",
+                  self.xminame)
+        aggs = self.getToAssociations(aggtypes=['aggregate']) \
+            or self.getFromAssociations(aggtypesTo=['aggregate'])
         log.debug("Found aggregations that contain us: %r.", aggs)
-        comps = self.getToAssociations(aggtypes=['composite']) or self.getFromAssociations(aggtypesTo=['composite'])
+        comps = self.getToAssociations(aggtypes=['composite']) \
+            or self.getFromAssociations(aggtypesTo=['composite'])
         log.debug("Found compositions that contain us: %r.", comps)
 
         if comps and not aggs:
@@ -1067,7 +1124,7 @@ class XMIMethodParameter(XMIElement):
             self.has_default = 1
 
     def _initFromDOM(self, domElement):
-        super(XMIMethodParameter, self)._initFromDOM()
+        XMIElement._initFromDOM()
         self.buildDefault()
 
     def getExpression(self):
@@ -1087,12 +1144,13 @@ class XMIMethod (XMIElement):
         self.params = []
         parElements = self.domElement.getElementsByTagName(XMI.METHODPARAMETER)
         for p in parElements:
+            param = XMIMethodParameter(self.XMI.getName(p), p)
             self.addParameter(XMIMethodParameter(p))
             log.debug("Params of the method: %r.",
                       self.params)
 
     def _initFromDOM(self):
-        super(XMIMethod, self)._initFromDOM()
+        XMIElement._initFromDOM(self)
         self.XMI.calcVisibility(self)
         self.XMI.calcOwnerScope(self)
         self._buildParameters()
@@ -1345,11 +1403,11 @@ class XMIDependency(XMIElement):
 class XMIStateMachine(XMIElement):
     implements(IXMIStateMachine)
     
-    def __init__(self, *args, **kwargs):        
+    def __init__(self, name, dom, *args, **kwargs):        
         self.states = []    
         self.transitions = []
         self.classes = []
-        super(XMIStateMachine, self).__init__(*args, **kwargs)
+        XMIElement.__init__(self, name, dom, *args, **kwargs)
         self.setParent(kwargs.get('parent', None))
         log.debug("Created statemachine '%s'.", self.id)
 
@@ -1512,7 +1570,7 @@ class XMIStateTransition(XMIElement):
     guard = None
 
     def _initFromDOM(self):
-        super(XMIStateTransition, self)._initFromDOM()
+        XMIElement._initFromDOM(self)
         self._buildEffect()
         self._buildGuard()
 
@@ -1639,7 +1697,7 @@ class XMIAction(XMIElement):
     expression = None
     
     def _initFromDOM(self):
-        super(XMIAction, slef)._initFromDOM()
+        XMIElement._initFromDOM(self)
         self.expression = self.XMI.getExpressionBody(self.domElement,
                                                 tagname=XMI.ACTION_EXPRESSION)
 
@@ -1681,7 +1739,7 @@ class XMIGuard(XMIElement):
     expression = None
     
     def _initFromDOM(self):
-        super(XMIGuard, self)._initFromDOM()
+        XMIElement._initFromDOM(self)
         self.expression = self.XMI.getExpressionBody(self.domElement,
                                                 tagname=XMI.BOOLEAN_EXPRESSION)
 
@@ -1692,17 +1750,16 @@ class XMIState(XMIElement):
     implements(IXMIState)
     isinitial = 0
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, name, dom, *args, **kwargs):
         self.incomingTransitions = []
         self.outgoingTransitions = []
-        super(XMIState, self).__init__(*args, **kwargs)
+        XMIElement.__init__(name, dom, *args, **kwargs)
 
     def _initFromDOM(self):
-        super(XMIState, self)._initFromDOM()
+        XMIElement._initFromDOM(self)
         self._associateTransitions()
 
     def _associateTransitions(self):
-
         vertices = getElementByTagName(self.domElement,
                                        self.XMI.STATEVERTEX_OUTGOING,
                                        default=None)
@@ -1773,7 +1830,7 @@ class XMIDiagram(XMIElement):
     modelElement = None
 
     def _initFromDOM(self):
-        super(XMIDiagram, self)._initFromDOM()
+        XMIElement._initFromDOM(self)
         self._buildSemanticBridge()
 
     def _buildSemanticBridge(self):
