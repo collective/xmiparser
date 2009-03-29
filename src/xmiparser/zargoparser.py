@@ -19,7 +19,12 @@ def getProfilesDirectories():
             argouml_config = open(argouml_config_filename)
             for line in argouml_config.xreadlines():
                 if line.startswith('argo.profiles.directories='):
+                    # '*' is the directories separator.
+                    # There is a '*' at the end of the key,
+                    # so we delete the last empty element
                     profiles_directories = line[26:].split('*')[:-1]
+                    # unescape backslash
+                    profiles_directories = [pd.replace(r"\:", ":").replace("\\\\", "\\") for pd in profiles_directories]
                     break
         finally:
             argouml_config.close()
