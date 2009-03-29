@@ -4,7 +4,7 @@ import sys, os
 def read(*rnames):
     return open(os.path.join(os.path.dirname(__file__), *rnames)).read()
 
-version = '1.4'
+version = '1.5'
 shortdesc = "XMI Parser (API for the UML XML representation specified by OMG)"
 packages=find_packages(exclude=['ez_setup',])
 
