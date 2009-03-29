@@ -1,0 +1,9 @@
+Changelog
+=========
+
+1.4 - 2009-03-29
+----------------
+
+- Search profiles in directories configured with ArgoUML (read the ~/.argouml/argo.user.properties file)
+  You don't need to specify the -p option with archgenxml anymore.
+  [vincentfretin]
