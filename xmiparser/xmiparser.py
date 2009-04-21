@@ -2776,12 +2776,15 @@ def buildHierarchy(doc, packagenames, profile_docs=None):
 
     return res
 
-def parse(xschemaFileName=None, xschema=None, packages=[], generator=None, profile_dir=None, **kw):
+def parse(xschemaFileName=None, xschema=None, packages=[], generator=None, 
+          profile_dir=None, **kw):
     """ """
     global XMI
     profiles_directories = zargoparser.getProfilesDirectories()
     if profile_dir:
         profiles_directories[0:0] = [profile_dir]
+    if not profiles_directories:
+        profiles_directories = ['.']
     profile_docs = {}
     if profiles_directories:
         log.info("Directories to search for profiles: %s", str(profiles_directories))
