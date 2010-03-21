@@ -4,6 +4,9 @@ Changelog
 1.5 (unreleased)
 ----------------
 
+- Removed DeprecationWarning about the sets module.
+  [vincentfretin]
+
 - By default search in current directory for profile.
   [jensens]
 

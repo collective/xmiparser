@@ -14,7 +14,6 @@ import string
 import os.path
 import logging
 from zipfile import ZipFile
-from sets import Set
 from odict import odict
 from xml.dom import minidom
 from zope.interface import implements
@@ -1297,7 +1296,7 @@ class XMIPackage(XMIElement, StateMachineContainer):
 
     def getAssociations(self, recursive=0):
         classes = self.getClassesAndInterfaces(recursive=recursive)
-        res = Set()
+        res = set()
         for cl in classes:
             res.union_update(cl.getFromAssociations())
         return res
@@ -2359,7 +2358,7 @@ class XMIStateMachine(XMIElement):
         return None
 
     def getAllTransitionActionNames(self, before=True, after=True):
-        actionnames = Set()
+        actionnames = set()
         actions = self.getAllTransitionActions()
         for action in actions:
             if before and action.getBeforeActionName():
