@@ -1,10 +1,14 @@
 Changelog
 =========
 
-1.5 - unreleased
+1.5 (unreleased)
 ----------------
 
-1.4 - 2009-03-29
+- By default search in current directory for profile.
+  [jensens]
+
+
+1.4 (2009-03-29)
 ----------------
 
 - Search profiles in directories configured with ArgoUML (read the ~/.argouml/argo.user.properties file)
