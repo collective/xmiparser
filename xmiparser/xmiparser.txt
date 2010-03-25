@@ -4,7 +4,11 @@ lets import the parser
 
 we load and parse the UML file
 
-    >>> model = xmiparser.parse('../doc/umlsample.zargo')
+    >>> import os
+    >>> package_dir = os.path.dirname(xmiparser.__file__)
+    >>> modelfile = os.path.join(package_dir, 'doc', 'umlsample.zargo')
+
+    >>> model = xmiparser.parse(modelfile)
     >>> model.getClasses()
     [<XMIClass Person>, <XMIClass Company>, <XMIAssociationClass WorksFor>]
 
@@ -35,5 +39,4 @@ get the target class for all associations
     >>> targets=[ass.toEnd.getTarget() for ass in person.getFromAssociations()]
     >>> print targets
     [<XMIClass Company>]
-
 
