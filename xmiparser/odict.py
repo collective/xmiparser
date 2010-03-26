@@ -2,36 +2,35 @@
 # http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/107747
 # which has the same license as Python (i.e. GPL compatible)
 
-class odict(dict):
+from UserDict import UserDict
+
+class odict(UserDict):
     def __init__(self, dict = None):
-        dict.__init__(self, dict)
         self._keys = []
+        UserDict.__init__(self, dict)
 
     def __delitem__(self, key):
-        dict.__delitem__(self, key)
+        UserDict.__delitem__(self, key)
         self._keys.remove(key)
 
     def __setitem__(self, key, item):
-        dict.__setitem__(self, key, item)
+        UserDict.__setitem__(self, key, item)
         if key not in self._keys: self._keys.append(key)
 
-    def __iter__(self):
-        return iter(self._keys)
-
     def clear(self):
-        dict.clear(self)
+        UserDict.clear(self)
         self._keys = []
 
     def copy(self):
-        newInstance = odict()
-        newInstance.update(self)
-        return newInstance
+        dict = UserDict.copy(self)
+        dict._keys = self._keys[:]
+        return dict
 
     def items(self):
         return zip(self._keys, self.values())
 
     def keys(self):
-        return self._keys[:]
+        return self._keys
 
     def popitem(self):
         try:
@@ -45,12 +44,14 @@ class odict(dict):
         return (key, val)
 
     def setdefault(self, key, failobj = None):
-        dict.setdefault(self, key, failobj)
+        UserDict.setdefault(self, key, failobj)
         if key not in self._keys: self._keys.append(key)
 
     def update(self, dict):
-        for (key, val) in dict.items():
-            self[key] = val
+        UserDict.update(self, dict)
+        for key in dict.keys():
+            if key not in self._keys: self._keys.append(key)
 
     def values(self):
         return map(self.get, self._keys)
+
