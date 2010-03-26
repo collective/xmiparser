@@ -38,7 +38,7 @@ setup(name='xmiparser',
       install_requires=[
           'setuptools',
           'zope.interface',
-          'ordereddict==1.1',
+          'ordereddict',
       ],
       entry_points="""
       # -*- Entry points: -*-
