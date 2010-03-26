@@ -14,7 +14,7 @@ import string
 import os.path
 import logging
 from zipfile import ZipFile
-from odict import odict
+from ordereddict import OrderedDict
 from xml.dom import minidom
 from zope.interface import implements
 from utils import mapName
@@ -818,7 +818,7 @@ class XMIElement(object):
         self.attributeDefs = []
         self.methodDefs = []
         self.id = ''
-        self.taggedValues = odict()
+        self.taggedValues = OrderedDict()
         self.subTypes = []
         self.stereoTypes = []
         self.clientDependencies = []
