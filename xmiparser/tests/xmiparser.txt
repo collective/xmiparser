@@ -14,17 +14,17 @@ we load and parse the UML file
 
     >>> person=model.getClasses()[0]
     >>> person.getAttributeNames()
-    ['firstname', 'lastname']
+    [u'firstname', u'lastname']
 
     >>> person.getAttributeDefs()
     [<XMIAttribute firstname>, <XMIAttribute lastname>]
 
     >>> firstname=person.getAttributeDefs()[0]
     >>> firstname.getType()
-    'string'
+    u'string'
 
     >>> firstname.getName()
-    'firstname'
+    u'firstname'
     
     >>> assocs=person.getFromAssociations()
     >>> assoc=assocs[0]

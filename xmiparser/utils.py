@@ -30,7 +30,6 @@ def toBoolean(v):
     return False
 
 def normalize(data, doReplace=False):
-    """Converts a unicode to string, stripping blank spaces."""
     log.debug("Normalizing %r.", data)
     if type(data) not in types.StringTypes:
         log.debug("Not string, returning as-is.")
@@ -59,7 +58,7 @@ def normalize(data, doReplace=False):
                 data = data.replace(key, specialrpl[key])    
     if not data is None:
         log.debug("Normalized, returning %r.", data)
-        return data.encode('utf-8')
+        return data
     else:
         return None
 
