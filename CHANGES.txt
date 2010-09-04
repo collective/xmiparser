@@ -4,6 +4,16 @@ Changelog
 1.5 (unreleased)
 ----------------
 
+- Made tests run again.
+ - Re-added samle .zargo file from the past.
+ - Modified xmiparser.txt to get the path to the sample file dynamically.
+ - Added tests.py so unittest picks up the doctest in the xmiparser.txt file
+  [moldy]
+
+- Replaced buggy odict implementation by the ordereddict implementation
+  available in Python 2.7.
+  [moldy]
+
 - Removed DeprecationWarning about the sets module.
   [vincentfretin]
 
