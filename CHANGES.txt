@@ -1,13 +1,10 @@
 Changelog
 =========
 
-1.5 (unreleased)
+1.5 (2010-09-04)
 ----------------
 
-- Made tests run again.
- - Re-added samle .zargo file from the past.
- - Modified xmiparser.txt to get the path to the sample file dynamically.
- - Added tests.py so unittest picks up the doctest in the xmiparser.txt file
+- Re-added sample .zargo file from the past, the tests run again.
   [moldy]
 
 - Replaced buggy odict implementation by the ordereddict implementation
