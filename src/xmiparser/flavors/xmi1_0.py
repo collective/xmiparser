@@ -437,4 +437,12 @@ class XMI1_0(object):
 
     def getModel(self, doc):
         content = self.getContent(doc)
-        return getElementByTagName(content, self.MODEL, recursive=0)
+        try:
+            model = getElementByTagName(content, XMI.MODEL, recursive=0)
+        except TypeError:
+            #handle a bug in ArgoUML that causes 2 model entries in the xmi
+            #from which one is empty
+            models = getElementsByTagName(content, XMI.MODEL, recursive=0)
+            model=models[1]
+            
+        return model
