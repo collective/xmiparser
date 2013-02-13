@@ -693,7 +693,7 @@ class XMI1_2 (XMI1_1):
                 try:
                     typeElement = datatypes[typeid]
                 except KeyError:
-                    raise ValueError, 'datatype %s not defined' % typeid
+                    raise ValueError, 'datatype %s not defined in attribute %s' % (typeid,att.getName())
                 att.type = XMI.getName(typeElement)
                 # Collect all datatype names (to prevent pure datatype
                 # classes from being generated)
